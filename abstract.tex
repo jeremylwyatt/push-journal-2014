@@ -1,0 +1,5 @@
+An important skill in robotics is the ability to predict how objects behave during manipulation.  This is necessary to enable
+many manipulations to be planned.  Physics simulators are commonly
+used for this purpose, but in practice they model many kinds of object
+interaction poorly.  An alternative explored here is to
+learn a model of the object's motion from data, to {\em learn to predict}. The paper begins by showing how to formulate the prediction problem for cases where forces are not observable, and modelling kinematics is sufficient. Then we formulate the problem of learning to predict in two different machine learning frameworks: i) regression and ii) density estimation. Our learning approach is modular: many simple object and context specific predictors are learned. We show empirically that such modular predictors can outperform physics simulators.  In addition we show how to extend the density estimation approach using a product of experts. The paper gives first results on real objects showing that this product of experts formulation allows transfer learning to objects of novel shape, and to novel actions.

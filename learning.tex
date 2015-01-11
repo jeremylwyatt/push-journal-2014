@@ -1,0 +1,657 @@
+\begin{figure*}[t!]
+\centerline{\includegraphics[width=0.7\textwidth]{sequential-frames}}
+\caption[Setup1]{(Left) 2D projection at time $t$ of a robotic finger with frame at time $t$ of $A_{t}$,
+an object with frame $B_{t}$, and a ground plane with constant frame
+$O$. Over three time steps this system consists can be described by six rigid body transformations $T^{A_t, B_t}$, $T^{B_t, O}$, $T^{A_{t-1}, A_{t}}$, $T^{A_{t}, A_{t+1}}$, $T^{B_{t-1}, B_{t}}$, and $T^{B_{t}, B_{t+1}}$}
+\label{fig:Learning.setup1}
+\end{figure*}
+
+\section{Encoding rigid body kinematics}
+\label{sec:Representations}
+
+In this section we set up the basic notation required to pose the
+above prediction learning problems formally. Without loss of generality we explain the notation using an example from our application domain
+(Figure~\ref{fig:Learning.setup1}). Three reference frames $A$, $B$
+and $O$ sit in a $3$\nobreakdash-\hspace{0pt}dimensional Cartesian
+space. Frame $A$ is attached to a robot finger which pushes an object with frame $B$, which in turn is placed on a table top with frame
+$O$.\footnote{Although it is an abuse of notation for brevity we will
+  use $A$, $B$ and $O$ to denote either the frame or the body to which  it is attached. So we will talk both of the frame $B$ and the object $B$.} While frame $O$ is fixed, $A$ and $B$ change in time and are observed at discrete time steps $..., t-1, t, t+1, ...$.  Frame $X$ at
+time step $t$ is denoted $X_t$, and the rigid body transformation
+between a frame $X$ and a frame $Y$ is denoted by $T^{X, Y}$.
+
+From classical mechanics we know that in order to predict the change
+in state of a rigid body, it is sufficient to know its mass, velocity
+and a net force applied to the body.  Since our method will rely on
+learning from object trajectories we cannot assume any knowledge of
+the mass and applied forces. We can however, use the motion of a body over time to encode acceleration -- an effect of the applied net
+force. We therefore use rigid body transformations $T^{X,Y}$ of the interacting bodies through time (Figure~\ref{fig:Learning.setup1}). Given the additional assumption that the net force and the body mass are constant, two subsequent rigid body transformations $T^{B_{t-1},
+  B_{t}}$ and $T^{B_{t},B_{t+1}}$ give a complete description of the
+state of some body B (here the object) at time step $t$ in the absence
+of the other bodies.  Adding the transformation $T^{B_t, O}$ to give a
+triple of transformations thus provides a complete description of the
+state of body B in the fixed frame $O$ (the stationary elements of the
+environment).  Similarly, a second triple of transformations $T^{A_t,
+  O}$, $T^{A_{t-1}, A_{t}}$ and $T^{A_{t}, A_{t+1}}$ provides such a
+description for some other body (here the finger) with frame $A$. 
+The state of the overall system consisting of these two interacting
+bodies with frames $A$ and $B$ and the fixed environment $O$ can
+thus be adequately described by these six transformations.
+
+In fact in our representation, we replace transformation $T^{A_t, O}$ by relative transformation $T^{A_t, B_t}$, thus also explictly capturing the spatial relationship and thus any contacts between $A$ (finger) and $B$ (object). This gives us a representation consisting of the set of six transformations marked in bold dotted lines in Figure~\ref{fig:Learning.setup1}. The prediction problem, simply put, will thus be to predict the motion of the object $B$ in the next step: $T^{B_t,B_{t+1}}$ given these five other transformations. Before defining the problem formally, however, we need to think briefly about how best to store these transformations.
+
+% This makes generalisation easier.
+% The former has potential advantages in the presence of measurement noise
+% whenever $T^{A_t, B_t}$ can be estimated directly,
+% instead of computing $T^{A_t, B_t}$ from two
+% independently measured transformations $T^{A_t, O}$ and $T^{B_t, O}$.
+
+%\begin{figure}[t]
+%\centerline{\includegraphics[scale=0.5]{frames}}
+%\caption{A system consisting of two interacting bodies
+%with frames $A$ and $B$ in some constant environment with frame $O$
+%can be described by six rigid body transformations
+%$T^{A_t, B_t}$, $T^{B_t, O}$, $T^{A_{t-1}, A_{t}}$,
+%$T^{A_{t}, A_{t+1}}$, $T^{B_{t-1}, B_{t}}$, and $T^{B_{t}, B_{t+1}}$.}
+%\label{fig:Learning.Frames}
+%\end{figure}
+
+\begin{figure}[b]
+\centerline{\includegraphics[width=7.0cm]{body1}}
+\caption[Transformations in the inertial frame]{In the above two scenes
+a pose change between time step $t$ and $t+1$ as observed in
+instantaneous object body frame $A^{(1)}$ and the same object in
+another instantaneous body frame $A^{(2)}$ given inertial
+frame $I$ are both the same.
+However because transformations $T^{I, A^{(1)}}$ and
+$T^{I, A^{(2)}}$ are different,
+the corresponding transformations in the inertial frame are also different,
+i.e.\ $T_{in}^{A^{(1)}_{t}, A^{(1)}_{t+1}} \neq T_{in}^{A^{(2)}_{t}, A^{(2)}_{t+1}}$.}
+\label{fig:Learning.Body1}
+\end{figure}
+
+Specifically, since we are interested in learning, we need to express this set of transformations in a way that supports generalised predictions. In general the behaviours of interacting bodies described by frames from Figure~\ref{fig:Learning.setup1} are independent of any inertial frame \cite{kopicki_prediction_2010}. Unfortunately, a na\"{\i}ve representation of transformation $T^{A_{t}, A_{t+1}}$ as $A_{t+1}(A_{t})^{-1}$, or explicitly given inertial frame $I$,
+% MAREK CHECK
+\begin{equation}
+T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t+1}} (T^{I, A_{t}})^{-1}
+\label{eq:Learning.In1}
+\end{equation}
+
+\noindent makes the transformation in \eqref{eq:Learning.In1} dependent on the currently used inertial frame $I$ (see
+Figure~\ref{fig:Learning.Body1}).  This would make the stored transformations poor from the point of view of generalisation. A better way is instead to store all the transformations in a body frame (at learning time) and convert to and from an inertial frame dependent transformation (at prediction time) using similarity transforms.
+
+Intuitively these similiarity transforms align the inertial and body frames, perform the
+required transformation and then invert the transformation required to
+align them. In this manner, given the instantaneous object frame
+$A_{t}$ at time $t$, and the inertial frame dependent transformation
+$T_{in}^{A_{t}, A_{t+1}}$, one can obtain the body frame dependent
+transformation $T_{body}^{A_{t}, A_{t+1}}$:
+
+\begin{equation}
+T_{body}^{A_{t}, A_{t+1}} = (T^{I, A_{t}})^{-1} T_{in}^{A_{t}, A_{t+1}} T^{I, A_{t}}
+\label{eq:Learning.Body1}
+\end{equation}
+
+\noindent where $T^{I, A_{t+1}} =$ $T_{in}^{A_{t}, A_{t+1}} T^{I, A_{t}} =$ $T^{I, A_{t}} T_{body}^{A_{t}, A_{t+1}}$.
+
+It is this body frame dependent transformation that will be stored during learning. Conversely, when a prediction is required, given a body frame dependent transformation, the object
+frame $A_{t}$, and using Equation~\eqref{eq:Learning.Body1}, the
+inertial frame dependent transformation $T_{in}^{A_{t}, A_{t+1}}$ is
+recovered using:
+\begin{equation}
+T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t}} T_{body}^{A_{t}, A_{t+1}} (T^{I, A_{t}})^{-1}
+\label{eq:Learning.Body2}
+\end{equation}
+This technique is critical to generalisation across inertial frames. In the rest of the paper we will retain subscripts $in$, but suppress subscripts $body$, and assume that all transformations $T^{X, Y}$ are transformations in the body frame $X$ obtained using a similarity transform:
+\begin{equation}
+T^{X, Y} \equiv T_{body}^{X, Y} = ({T^{I, X}})^{-1} T_{in}^{X, Y} {T^{I, X}}
+\label{eq:Learning.Similarity}
+\end{equation}
+%In this section we set up the basic notation required to pose the
+%prediction problem. Without loss of generality we
+%explain the notation using an example from our application domain
+%(Figure~\ref{fig:Learning.setup1}). Three reference frames $A$, $B$
+%and $O$ sit in a $3$\nobreakdash-\hspace{0pt}dimensional Cartesian
+%space. Frame $A$ is attached to a robot finger which pushes an object with
+%frame $B$, which in turn is placed on a table top with frame
+%$O$.\footnote{Although it is an abuse of notation for brevity we will
+%  use $A$, $B$ and $O$ to denote either the frame or the body to which
+%  it is attached. So we will talk both of the frame $B$ and the object
+%  $B$.} While frame $O$ is fixed, $A$ and $B$ change in time and are
+%observed at discrete time steps $..., t-1, t, t+1, ...$.  Frame $X$ at
+%time step $t$ is denoted $X_t$, and the rigid body transformation
+%between a frame $X$ and a frame $Y$ is denoted by $T^{X, Y}$.
+%
+%From classical mechanics we know that in order to predict the change
+%in state of a rigid body, it is sufficient to know its mass, velocity
+%and a net force applied to the body.  Since our method will rely on
+%learning from object trajectories we cannot assume any knowledge of
+%the mass and applied forces. We can however, use the motion of a body
+%over time to encode acceleration -- an effect of the applied net
+%force. We therefore use rigid body transformations of the interacting
+%bodies through time (Figure~\ref{fig:Learning.setup1}). Given the
+%additional assumption that the net force and the body mass are
+%constant, two subsequent rigid body transformations $T^{B_{t-1},
+%  B_{t}}$ and $T^{B_{t},B_{t+1}}$ give a complete description of the
+%state of some body B (here the object) at time step $t$ in the absence
+%of the other bodies.  Adding the transformation $T^{B_t, O}$ to give a
+%triple of transformations thus provides a complete description of the
+%state of body B in the fixed frame $O$ (the stationary elements of the
+%environment).  Similarly, a second triple of transformations $T^{A_t,
+%  O}$, $T^{A_{t-1}, A_{t}}$ and $T^{A_{t}, A_{t+1}}$ provides such a
+%description for some other body (here the finger) with frame $A$.
+%
+%The state of the overall system consisting of these two interacting
+%bodies with frames $A$ and $B$ and the fixed environment $O$ can thus
+%be described by six transformations as shown in
+%Figure~\ref{fig:Learning.setup1}. Transformation $T^{A_t, O}$ can be
+%replaced by a relative transformation $T^{A_t, B_t}$, explictly
+%capturing the spatial relationship and thus any contacts between $A$ (finger)
+%and $B$ (object). 
+%% This makes generalisation easier.
+%% The former has potential advantages in the presence of measurement noise
+%% whenever $T^{A_t, B_t}$ can be estimated directly,
+%% instead of computing $T^{A_t, B_t}$ from two
+%% independently measured transformations $T^{A_t, O}$ and $T^{B_t, O}$.
+%
+%%\begin{figure}[t]
+%%\centerline{\includegraphics[scale=0.5]{frames}}
+%%\caption{A system consisting of two interacting bodies
+%%with frames $A$ and $B$ in some constant environment with frame $O$
+%%can be described by six rigid body transformations
+%%$T^{A_t, B_t}$, $T^{B_t, O}$, $T^{A_{t-1}, A_{t}}$,
+%%$T^{A_{t}, A_{t+1}}$, $T^{B_{t-1}, B_{t}}$, and $T^{B_{t}, B_{t+1}}$.}
+%%\label{fig:Learning.Frames}
+%%\end{figure}
+%
+%\begin{figure}[b]
+%\centerline{\includegraphics[width=7.0cm]{body1}}
+%\caption[Transformations in the inertial frame]{In the above two scenes
+%a pose change between time step $t$ and $t+1$ as observed in
+%instantaneous object body frame $A^{(1)}$ and the same object in
+%another instantaneous body frame $A^{(2)}$ given inertial
+%frame $I$ are both the same.
+%However because transformations $T^{I, A^{(1)}}$ and
+%$T^{I, A^{(2)}}$ are different,
+%the corresponding transformations in the inertial frame are also different,
+%i.e.\ $T_{in}^{A^{(1)}_{t}, A^{(1)}_{t+1}} \neq T_{in}^{A^{(2)}_{t}, A^{(2)}_{t+1}}$.}
+%\label{fig:Learning.Body1}
+%\end{figure}
+%
+%We need to express these transformations in a way that supports
+%generalised predictions. In general the behaviours of interacting
+%bodies described by frames from Figure~\ref{fig:Learning.setup1} are
+%independent of any inertial frame \cite{kopicki_prediction_2010}.
+%Unfortunately, a na\"{\i}ve representation of transformation
+%$T^{A_{t}, A_{t+1}}$ as $A_{t+1}(A_{t})^{-1}$, or explicitly given
+%inertial frame $I$,
+%% MAREK CHECK
+%\begin{equation}
+%T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t+1}} (T^{I, A_{t}})^{-1}
+%\label{eq:Learning.In1}
+%\end{equation}
+%
+%\noindent makes transformation \eqref{eq:Learning.In1} dependent on
+%the currently used inertial frame $I$ (see
+%Figure~\ref{fig:Learning.Body1}).  Alternatively, instead of an
+%inertial frame dependent transformation $T_{in}^{A_{t}, A_{t+1}}$, one
+%can represent all the transformations in the body frame and convert to
+%and from an inertial frame dependent transformation using similarity
+%transforms.
+%
+%Intuitively these align the inertial and body frames, perform the
+%required transformation and then invert the transformation required to
+%align them. In this manner, given the instantaneous object frame
+%$A_{t}$ at time $t$, and the inertial frame dependent transformation
+%$T_{in}^{A_{t}, A_{t+1}}$, one can obtain the body frame dependent
+%transformation $T_{body}^{A_{t}, A_{t+1}}$:
+%
+%\begin{equation}
+%T_{body}^{A_{t}, A_{t+1}} = (T^{I, A_{t}})^{-1} T_{in}^{A_{t}, A_{t+1}} T^{I, A_{t}}
+%\label{eq:Learning.Body1}
+%\end{equation}
+%
+%\noindent where $T^{I, A_{t+1}} =$ $T_{in}^{A_{t}, A_{t+1}} T^{I, A_{t}} =$ $T^{I, A_{t}} T_{body}^{A_{t}, A_{t+1}}$.
+%
+%Conversely, given a body frame dependent transformation, the object
+%frame $A_{t}$, and using Equation~\eqref{eq:Learning.Body1}, the
+%inertial frame dependent transformation $T_{in}^{A_{t}, A_{t+1}}$ is
+%given by:
+%\begin{equation}
+%T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t}} T_{body}^{A_{t}, A_{t+1}} (T^{I, A_{t}})^{-1}
+%\label{eq:Learning.Body2}
+%\end{equation}
+%We use this to store learned transformations in the body frame
+%and then produce predictions in some inertial frame. In the rest of
+%the paper we will retain subscripts $in$, but suppress subscripts
+%$body$, and assume that all transformations $T^{X, Y}$ are
+%transformations in the body frame $X$ obtained using a similarity
+%transform:
+%\begin{equation}
+%T^{X, Y} \equiv T_{body}^{X, Y} = ({T^{I, X}})^{-1} T_{in}^{X, Y} {T^{I, X}}
+%\label{eq:Learning.Similarity}
+%\end{equation}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Formal statement: learning to predict}
+\label{sec:PredictionProblem}
+
+We now have the basics required to formally describe the one-step and then the multi-step prediction
+problem in such a way that they become problems of learning to predict, and we can effectively tackle Problem 1 (Action Interpolation).
+
+\noindent {\bf One step prediction.} The one step prediction problem is formulated as follows:
+given that we know or observe the recent and current positions of the finger and object, and know the planned motion of the finger, $T^{A_{t},  A_{t+1}}$, predict the resulting immediate motion of the object,
+$T^{B_{t}, B_{t+1}}$.  This is a problem of finding a function~$f$:
+\begin{multline}
+f: T^{A_t, B_t}, T^{B_t, O}, T^{A_{t-1}, A_{t}}, T^{B_{t-1}, B_{t}}, T^{A_{t}, A_{t+1}} \\ \longrightarrow T^{B_{t}, B_{t+1}}
+\label{eq:Learning.long}
+\end{multline}
+
+The function $f$ is capable of describing the effects of interactions between rigid bodies $A$ and $B$, providing their physical properties and net forces are constant
+in time,\footnote{A dynamic formulation could explicitly incorporate
+net forces into the domain and codomain of \eqref{eq:Learning.long}.}
+in the limit of infinitesimally small time steps.
+Furthermore, it can be approximately learned from observations
+for some small fixed time interval $\Delta t$ between time steps.
+
+If robotic manipulations are performed slowly we can assume quasi-static conditions, and ignore all frames at time $t-1$.  This conveniently reduces the dimensionality of the problem, giving a simplified function~$f_{qs}$:
+\begin{equation}
+f_{qs}: T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}} \longrightarrow T^{B_{t}, B_{t+1}}
+\label{eq:Learning.short}
+\end{equation}
+
+\noindent {\bf Multi-step prediction.} Having stated the one-step prediction problem it is possible to solve
+the multi-step prediction problem. Given a predictor (either $f$ or
+$f_{qs}$), the initial state of the finger $T^{A_{0}, O}$ and object
+$T^{B_{0}, O}$, and knowing the trajectory of the finger $A_{1},
+\ldots A_{T}$ over $T$ time steps, one can predict the complete
+trajectory of the object $B_{1}, \ldots B_{T}$, by simply iterating
+the predictions obtained from $f_{qs}$.  That is, the output of the
+predictor at time~$t$ is used as the input to the predictor for the
+next time step.
+
+\noindent {\bf Learning to predict as regression.} In principle it is straightforward to acquire a predictor $f$ or
+$f_{qs}$ by learning it from data. Given sufficient experience of
+object and finger trajectories we can perform a nonparametric
+regression analysis by taking $T^{A_t, B_t}, T^{B_t, O}, T^{A_{t},
+  A_{t+1}}$ etc.\ as independent variables, and $T^{B_{t}, B_{t+1}}$
+as the dependent variable.  Nevertheless, a powerful regression
+technique is required since the domain of $f_{qs}$ has 18~dimensions
+or more depending on the parameterisation of rotations.
+
+\noindent {\bf Learning to predict as density estimation.} As an alternative to learning the mapping~\eqref{eq:Learning.short} by regression, we can recast $f_{qs}$ as a conditional probability density (CPD) $p_{qs}$ over possible object motions $T^{B_{t},B_{t+1}}$~\cite{kopicki_prediction_2009}:
+\begin{equation}
+p_{qs}(T^{B_{t}, B_{t+1}} | T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}})
+%\label{eq:Learning.density1}
+\end{equation}
+
+The learning problem is then posed as one of density estimation, permitting the modelling of the probabilities of many possible outcomes. 
+
+Either the regression or density estimation formulation is suitable for use in a modular learning approach. In that case a separate module is learned for every agent-object-environment combination. Each module interpolates over actions for its agent-object-environment context, and thus solves problem 1: Action Interpolation. There is not, however, enough information in the five transformations used as input, to solve either problem 2 (Action Transfer) or problem 3 (Shape Transfer). We now identify the additional information needed to solve these.
+%A
+%density %~\eqref{eq:Learning.density1}
+%over possible object motions, can thus be used as the motion model in
+%e.g.\ a Bayes filter for object tracking. For example,
+%in~\cite{moerwald11predicting} we have shown how particle filtering
+%employing such a motion model makes visual tracking robust to visual
+%occlusions of the object.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{transfer-information}
+
+%\section{Transfer Learning: Representing contacts}
+%\label{sec:InfoForPrediction}
+%
+%The functions proposed above can adequately represent the behaviour of a specific pair of rigid bodies in a specific environment, but cannot be transferred to other bodies or environments. This is because the prediction problem as posed above does not encode information sufficient to determine the various contacts
+%the bodies make with one another. This is problematic because the
+%kinematic behaviour of an object can change radically as new contacts
+%occur or change position. This is because each contact provides a
+%kinematic constraint on the motion of the contacting bodies. This in
+%turn means that even small changes in the relative position or shape
+%of any of the bodies (finger, object, environment) can create large
+%changes in the future motion of the object with frame $B$. To achieve
+%transfer learning, explicit information about the contacts must therefore be captured by the input variables, and the learner must be able to capture the resultant mapping from input to output.
+%
+%\begin{figure}[t]
+%\centerline{\includegraphics[width=7.5cm]{shapes-colour}}
+%\caption[Shapes]{Two scenes (left and right),
+%each with an object on a tabletop, and a finger.
+%Only the shape of object B differs between the scenes.
+%Yet when A moves to the position shown by the dashed outline at time $t+1$,
+%the resulting displacement of B
+%(represented by the transformation $T^{B_{t}, B_{t+1}}$)
+%will be quite different.}
+%\label{fig:Learning.shapes}
+%\end{figure}
+%
+%Figure~\ref{fig:Learning.shapes} gives an example of the difficulty with respect to shape changes.  A predictor based on
+%Equation~\eqref{eq:Learning.short}, and trained on the smaller object
+%$B$ (Figure~\ref{fig:Learning.shapes} left scene), cannot generalise
+%to the larger object (right scene). This is because the three input
+%reference frames ($A_t$, $B_t$, $A_{t+1}$) in the left and right
+%panels have identical poses. Thus the predictions will be identical
+%even though the shapes are different. For the right panel the
+%prediction will be that the finger $A$ will pass into object $B$. So,
+%as posed there is insufficient information in the domain of the
+%function to allow generalisation. To enable such generalisation
+%information on the contact between $A$ and $B$ is required. If object
+%$B$ has multiple contacts then information on all of them should be
+%included. Physics simulators employ just such contact information to
+%inform their predictions. 
+%
+%\begin{figure*}[t]
+%\centerline{\includegraphics[width=0.85\textwidth]{information}
+%\label{fig:Learning.setup2}}
+%\caption{Three types of information useful in prediction problems. Left: (G - global) global frames of reference for the robot, object and the world. Centre: (A - agent) local frames of reference on the robot finger and the closest point on the object. Right (E - environment) local frames of reference on the object and the closest points on surfaces in the environment.}
+%\end{figure*}
+%
+%Our approach is to use pairs of local frames to encode this contact
+%information. Each pair encodes one transformation between part of the
+%object $B$ and another body. 
+%%The frames encode contacts by encoding
+%%the proximity of parts more generally. This encoding allows a learner
+%%to capture the natural propensity of pairs of object surfaces to move in
+%%particular ways. 
+%To distinguish these local frame pairs from what has
+%gone before we henceforth refer to the main frame attached to each
+%body (as defined in Section~\ref{sec:Representations}) as the global
+%frame for that body. 
+%%The pairs of local frames differ in two respects
+%%from the global frame. First they come in pairs: one frame sits on
+%%body $B$ and the other on either the finger $A$ or the environment
+%%$O$. Second the frames can be spatially dynamic: one frame can be
+%%fixed in position on its parent object, while its partner sits at the
+%%closest point to it on the other body. The closest point will clearly
+%%change as the spatial relationship between the two bodies changes. The
+%%transformation from one frame to the other becomes an additional
+%%variable in the input space. Although contact surfaces are continuous
+%%a finite number of local frames allow us to capture all the kinematic
+%%constraints on an object's motion. For the finger-object contact it is
+%%natural to make both local frames spatially dynamic as the contact
+%%point can range over the surfaces of both. For object-environment
+%%contacts each frame is in fixed position on the object, while its
+%%partner is spatially dynamic in the environment.
+%
+%We can formally define these local frame pairs as follows. Reconsider
+%the 2D projection of a robot finger with global frame $A_{t}$, an
+%object with global frame $B_{t}$, and the environment global frame $O$
+%(Figure~\ref{fig:Learning.setup2}). We define a pair of local frames
+%capturing the finger-object contact as $A^{L}_{t}$ and
+%$B^{L}_{t}$. These are spatially dynamic, i.e.\ at any time $t$ they
+%are located at the points of closest proximity on the finger and
+%object respectively.  We define the \textit{agent-object contact}
+%information as the transformations $T^{A^{L}_{t}, A^{L}_{t+1}}$ and
+%$T^{A^{L}_t, B^{L}_t}$.
+%
+%%\begin{figure}[t]
+%%\centerline{
+%%\includegraphics[width=4.25cm]{setup2}
+%%\includegraphics[width=4.25cm]{MultiExpertFramePositions}}
+%%\caption[Setup2]{The left panel depicts a 2D projection at time $t$ of a robotic finger with
+%%  global frame $A_{t}$, an object with global frame $B_{t}$, and a
+%%  ground plane with constant global frame $O$.  Local frames
+%%  $A^{L}_{t}$ and $B^{L}_{t}$ are situated on the finger and object at
+%%  their point of closest proximity.
+%%The right panel shows that co-ordinate frames can be attached to
+%%  an abitrary number of parts of the object, together with paired
+%%  frames on the environment. The \textit{object-environment
+%%    contact} behaviour can be learned for each of these frames.}
+%%\label{fig:Learning.setup2}
+%%%\caption[Environment contacts]{
+%%\label{fig:EnvFramePositions}
+%%\end{figure}
+%
+%
+%
+%
+%%Adding agent information can assist in generalisation to novel object shapes,
+%%since it implicitly encodes some relevant information about object shape.
+%
+%% In addition to representing how an object moves in response to a
+%% push by a robotic finger, it is desirable to incorporate learned information about
+%% the inherent tendencies of parts of an object to move in various
+%% directions with respect to the environment or other objects,
+%% regardless of whether the object is being pushed or not. This
+%% additional information may help when predicting the motion of a
+%% previously unseen object, or the response to a novel push direction,
+%% because it provides some prior knowledge about which kinds of
+%% motions are possible and which are not.
+%
+%We additionally define $N$ pairs of local frames $B^{Sk}_t$ and $E^{Sk}_t$ to
+%capture the object-environment contacts, where ($k=1 \ldots N$) (see
+%Figure~\ref{fig:Learning.setup2}). We attach the $N$ frames $B^{Sk}_t$
+%to various parts of the object. Each has a corresponding frame in the
+%environment $E^{Sk}_t$.  Because they are spatially dynamic the
+%frames $E^{Sk}_t$ move over surfaces in the environment, as the
+%object moves. We define the \textit{object-environment contact}
+%information as the set of transformations $T^{E^{Sk}_t,B^{Sk}_t}$ for $k=1
+%\ldots N$.
+%
+%To obtain the results presented in this paper, the number and the
+%locations of the frames $B^{Sk}_t$ on each different object were
+%determined by hand. In principle this procedure could be automated,
+%but falls beyond the scope of the current work.
+%
+%We have already motivated the need for these additional input
+%variables in terms of generalisation in the face of changes in object
+%shape. Their utility can also be seen with respect to changes in
+%action. The top row of Figure~\ref{fig:ToyExample} shows a training
+%and a test case with different actions. The prediction of the test
+%push trajectory requires some encoding of the kinematic constraint
+%imposed by the contact between the base of the L-shaped flap and the
+%table. This constraint exists in the training push, but is not
+%significant since the flap can rotate around its corner, unconstrained
+%by the base.
+%
+%\begin{figure}[b]
+%\centerline{\includegraphics[scale=0.3]{BackPushToyExample}}
+%\caption[ToyExample]{Schematic diagram (2D projection of 3D scene)
+%in which an object (of L-shaped cross-section) on a supporting surface
+%is pushed by a robotic finger. 
+%Various predictors are trained solely on forward pushes (top left), but tested on 
+%backwards pushes (top right). 
+%The top panels show the push trajectory for the training and test phases,
+%whereas the bottom panels show the outputs from
+%three types of predictor (G, G+A and G+A+E) in the test phase.
+%%A predictor using just global information
+%%will fail to generalise, and will predict that the object does not move
+%%as the finger passes through it (bottom left).
+%%Adding an agent contact will stop the finger penetrating the object,
+%%but does not guarantee that the predicted object motion will respect other
+%%impenetrability constraints (bottom middle).
+%%Finally, using an additional environment contact
+%%attached to the base of the object,
+%%a physically plausible motion is obtained (bottom right).
+%}
+%\label{fig:ToyExample}
+%\end{figure}
+%
+%We can now consider the effects that different amounts of information
+%might have on generalised predictions. A predictor endowed only with
+%information based on the global frames for each body we refer to as
+%having global information (G). We can add agent-object contact
+%information to this (G+A), and in turn we can add object-environment
+%contact information (G+A+E). Now consider the possible predictions for
+%the test case (Figure~\ref{fig:ToyExample} bottom row). A predictor
+%using G will predict that the object will not move, because it has no
+%nearby experience to suggest otherwise. A predictor using G+A has
+%information from the training case that the object surface will move
+%with the finger, so that the finger will not pass through it, but is
+%also capable of predicting that the object rotates about the corner
+%and into the table since it doesn't model the object-environment
+%contact. A predictor using G+A+E will have information about the
+%effect of the contact between the base of the flap and the table and
+%so should avoid predicting a rotation into the table.
+%
+%One point is critical here: the above analysis only concerns what the
+%information allows, it depends on the ability of the learner to
+%utilise it.  To test this we must incorporate the information into
+%each framework. We can simply extend the regression and density
+%estimation frameworks to achieve this. For regression one way to
+%incorporate the extra information $A^{L}_{t}$,$B^{L}_{t}$ and
+%$E^{Sk}_t$\hspace{-6pt}, $B^{Sk}_t$, provided by the agent and
+%environment contacts, is simply to enlarge the domain of function~$f$
+%in Equation~\eqref{eq:Learning.short}, that is:
+%\begin{multline}
+%f'_{qs}: T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}}, T^{A^{L}_t, B^{L}_t}\{, T^{E^{Sk}_t,B^{Sk}_t}\}_{k=1 \ldots N} \\ 
+%\longrightarrow T^{B_{t}, B_{t+1}}
+%\label{eq:Learning.augmented}
+%\end{multline}
+%
+%\noindent Unfortunately, because the dimensionality of the domain of $f'_{qs}$
+%%in~Equation~\eqref{eq:Learning.augmented}
+%grows with the number of environment contacts $N$,
+%the difficulty of learning the mapping $f'_{qs}$ rapidly increases
+%as more environment contacts are added.
+%
+%%ack that LWPR cannot accept all the structural constraints that KDE can admit
+%%but this is beyond the scope of this paper's analysis of regression approach
+%%In principle it is straightforward to solve the prediction problem with
+%%a nonparametric regression analysis by taking
+%%$T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}}$ etc.\ as independent variables,
+%%and $T^{B_{t}, B_{t+1}}$ as the dependent variable.
+%%Nevertheless, a powerful regression technique is required
+%%since the domain of $f_{qs}$ has at least 18~dimensions,
+%%assuming an Euler angle parameterisation is used in the
+%%rigid body transformations (see Section~\ref{sec:Implementation.Parameterisation}).
+%
+%The conditional probability density (CPD) $p_{qs}$
+%over possible object motions $T^{B_{t},
+%  B_{t+1}}$~\cite{kopicki_prediction_2009} is augmented as follows:
+%\begin{multline}
+%p_{qs}(T^{B_{t}, B_{t+1}} | T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}}, T^{A^{L}_t, B^{L}_t}\\
+%\{, T^{E^{Sk}_t,B^{Sk}_t}\}_{k=1 \ldots N})
+%\label{eq:Learning.density}
+%\end{multline}
+%
+%Again the dimensionality of the conditioning variables makes density
+%estimation hard as the number of contacts grows. One way round this in
+%the density estimation case is to factorize the density in a way that
+%reflects the contact structure. We consider this in the next section. 
+%
+%%This density %~\eqref{eq:Learning.density}
+%%carries multiple hypotheses about possible object motions,
+%%which can be utilised in e.g.\ Bayesian filters.
+%%For example, in~\cite{moerwald11predicting} we have presented a framework
+%%that can successfully track an object's pose,
+%%despite ambiguous visual feedback due to occlusions.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Factorised density estimation}
+\label{sec:Factors}
+
+%factorisation gives a sweet spot at a few (<=3) factors
+%but POE does not scale to large # of environment factors
+
+Both formulations give learning problems that increase in difficulty as further contacts are added. One question is whether either formulation can be recast so as to take advantage of the natural
+problem structure. This section presents one such scheme for the
+density estimation (or CPD) formulation, based on a product of experts.
+
+Specifically the CPD formulation allows us to factorise the density
+and approximate $p_{qs}$ by making a conditional independence
+assumption. The unfactored CPD formulation gives a density over
+possible one step rigid body transformations of the object. We can
+factorise this by breaking up the conditioning variables into groups
+according to the contacts. This reflects the notion that the behaviour
+of the object is independent of contact $j$, conditional on contact
+$k$. Another way of explaining this is that each component of the
+product is an expert encoding the likely object motions given a
+particular kinematic constraint. The product will be maximised by a
+motion that best satisfies all the constraints simultaneously.
+
+The computational advantage is that since the component
+densities factorise the conditioning variables of $p_{qs}$ their
+domains' dimensionalities are smaller, and so potentially they can
+better manage the complexity of incorporating more information into
+the predictor.  Furthermore, a product of up to $N$ densities can be
+formed in $2^N - 1$ ways, where the particular form can depend on some
+current context (for example a variable set of contacts), in which
+each component corresponds to an appropriately simplified $f'_{qs}$.
+
+Schematically, for some normalisation constant~$C$ we propose the
+following factorisation:
+\begin{equation}
+p_{qs} \approx C\ p_{global}\ p_{agent}\ \mathop{\prod}_{k=1 \ldots N}{ p_{env,k}}
+\label{eq:Learning.product}
+\end{equation}
+\noindent where
+\begin{subequations}
+\begin{align}
+p_{global} &\equiv p_{global}(T^{B_{t}, B_{t+1}}|T^{A_{t}, A_{t+1}}, T^{A_t, B_t}, T^{B_t, O})
+\label{eq:Learning.densityglobal} \\
+p_{agent} &\equiv p_{agent}(T^{B^{L}_{t}, B^{L}_{t+1}}|T^{A^{L}_{t}, A^{L}_{t+1}}, T^{A^{L}_t, B^{L}_t})
+\label{eq:Learning.densitylocal} \\
+p_{env,k} &\equiv p_{env,k}(T^{B^{Sk}_t, B^{Sk}_{t+1}} | T^{E^{Sk}_t,B^{Sk}_t})
+\label{eq:Learning.densityenv}
+\end{align}
+\end{subequations}
+
+\noindent denote the \textit{global}, \textit{agent-object} and
+$k^{th}$ \textit{object-environment} density factors
+respectively~\cite{kopicki_prediction_2009}\cite{kopicki_prediction_2010}. %Note
+%that the agent factor $p_{agent}$ is conditioned on the motion
+%represented by the transformation $T^{A^{L}_{t}, A^{L}_{t+1}}$, which
+%allows $p_{agent}$ to be used independently of the global factor
+%$p_{global}$.  This is not possible for the environment factors
+%$p_{env,k}$, because the corresponding ``action" represented by
+%$T^{B^{Sk}_t, B^{Sk}_{t+1}}$ is not known at time $t$, since it
+%depends on the estimated object movement $T^{B_{t}, B_{t+1}}$.
+The one step prediction problem can then be defined as finding the
+transformation $\widetilde{T}_{in}^{B_{t}, B_{t+1}}$ expressed in some inertial frame which maximises the product of densities \eqref{eq:Learning.product}:
+\begin{equation}
+\widetilde{T}_{in}^{B_{t}, B_{t+1}} = \argmax{T_{in}^{B_{t}, B_{t+1}}} \bigg\lbrace
+p_{global}\  p_{agent} \mathop{\prod}_{k=1 \ldots N}{ p_{env,k} }
+\bigg\rbrace
+\label{eq:Learning.MultiFactorProduct}
+\end{equation}
+
+\noindent where similarity transforms as described above must be used to evaluate $p_{global}$, $p_{agent}$ and the $N$ environment factors $p_{env,k}$ for a given ${T}_{in}^{B_{t}, B_{t+1}}$.
+
+The key property here is that the global, agent and environment factors encode information about which candidate rigid body transformations are more or less feasible for each frame of reference respectively. However, once we form the product of these densities, only transformations which are feasible in all factors' frames will have high probability in the resulting combined distribution. In addition we make this product dynamic in the number of object-environment factors. Once the object surface is beyond some threshold distance from the environment surface its predictor switches off, and when it is close enough it switches on again. This enables us to keep only relevant predictors in the product at any one time -- improving prediction quality and improving efficiency. 
+
+%We now consider the relations between transformations expressed in the body frame of the local patches and corresponding transformations in the inertial frames.  For coordinate frames as shown in
+%Figure~\ref{fig:Learning.setup2}, from object rigidity and using
+%Equation~\eqref{eq:Learning.Body1} we have:
+%\begin{subequations}
+%\begin{align}
+%T^{A^{L}_{t}, A^{L}_{t+1}}& = (T^{I, A^{L}_{t}})^{-1} T_{in}^{A_{t}, A_{t+1}} T^{I, A^{L}_{t}}\\
+%T^{B^{L}_{t}, B^{L}_{t+1}}& = (T^{I, B^{L}_{t}})^{-1} T_{in}^{B_{t}, B_{t+1}} T^{I, B^{L}_{t}}\\
+%T^{B^{Sk}_t, B^{Sk}_{t+1}}& = (T^{I, B^{Sk}_{t}})^{-1} T_{in}^{B_{t}, B_{t+1}} T^{I, B^{Sk}_{t}}
+%\end{align}
+%\label{eq:Learning.Body3}
+%\end{subequations}
+%\noindent for some inertial frame $I$.
+%$T^{A^{L}_t, B^{L}_t}$ and $T^{E^{Sk}_t,B^{Sk}_t}$ can be determined
+%directly using Transform~\eqref{eq:Learning.Similarity}, for example:
+%\begin{equation}
+%T^{A^{L}_t, B^{L}_t} = (T^{I, A^{L}_{t}})^{-1} T_{in}^{A^{L}_t, B^{L}_t} T^{I, A^{L}_{t}}
+%\label{eq:Learning.Body4}
+%\end{equation}
+
+
+
+% global info is wrt absolute (world) frame, whereas A & E are relative
+%Note that the transformation of the global factor is defined with
+%respect to the inertial frame, whereas the agent and environment
+%transformations are expressed as relative changes.
+
+In summary we have now described two main formulations (regression and density estimation) able to incorporate varying amounts of information (G, G+A, G+A+E). We have also presented a reformulation of density estimation that factorises the prediction problem given information G+A or G+A+E into a product of experts. Which problem formulation and which information combine to provide the best prediction framework?
+Is the factorised problem better able to exploit the additional
+information than the unfactorised version. These questions can only be
+answered using specific regression and density estimation
+algorithms. Having completed our problem formulation we therefore now
+turn to the details of the implementations we used for each framework.
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=\columnwidth]{modular-predictor}}
+\caption[Modular Prediction]{Schematic of a modular predictor (left). Visual object identification selects a context, and the associated predictor takes as input the initial starting position and action sequence. Prediction is fed back on itself to produce a multi-step prediction. On the right is the internal structure of one of the modules, showing the product of experts structure. In this different predictors combine densities over predictions to produce an overall prediction.
+}
+\label{fig:modular}
+\end{figure}
