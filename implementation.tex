@@ -1,93 +1,14 @@
 \section{Implementation}\label{sec:Implementation}
-for pushing
+
 \newcommand{\bx}{\mathbf{x}}
 \newcommand{\by}{\mathbf{y}}
 
-%We have presented three formulations of prediction learning
-%problems: i) as function approximation, ii) as density
-%estimation and iii) as factored density estimation. 
-%We have suggested that there may be an advantage to
-%solving the density problem by factorising. We now detail the variety
-%of parameterisations of rigid body transformations that may be
-%employed, before describing the implementation details for our chosen
-%regression and density estimation algorithms.
-%\subsection{Parameterisation}\label{sec:Implementation.Parameterisation}
-%
-
-%%3-DOF 
-%Positions can be parameterised uniquely by vectors $\mathbf{p} \in \mathbb{R}^3$, and
-%3-DOF orientations by $3 \times 3$ rotation matrices $R \in SO(3)$
-%which comprise the special orthogonal group $SO(3)$ with respect to matrix multiplication.
-%There exist other parameterisations of $SO(3)$ which unlike rotation matrices
-%may not be unique, but provide a lower-dimensional description
-%of 3-DOF orientations.
-
-%\subsubsection{Euler angles} $XYZ$ Euler angles $(\alpha, \beta, \gamma)$ describe rotation $R(\alpha, \beta, \gamma) \in SO(3)$ by combining elementary rotations about axes $X$, $Y$ and $Z$, by angle $\alpha$, $\beta$ and $\gamma$ respectively:
-%\begin{equation}
-%R(\alpha, \beta, \gamma) = R_Z(\gamma)R_Y(\beta)R_X(\alpha)
-%\label{eq:Parameterisation.Euler}
-%\end{equation}
-%$XYZ$ Euler angles $(\alpha, \beta, \gamma)$ can be computed directly from coefficients of rotation matrix \eqref{eq:Parameterisation.Euler} as it is shown e.g. in \cite{murray_mathematical_1994}.
-
-%Using Euler angles $(\alpha, \beta, \gamma) \equiv \boldsymbol{\phi}$,
-%the parameterisation of a rigid-body transformation becomes
-%$ \bx = [\, \mathbf{p}\, ;\, \boldsymbol{\phi}\, ] \in \mathbb{R}^6$.
-%Euler angles, as a local parameterisation of $SO(3)$, suffer from singularities --
-%there is no global invertible smooth mapping. % $(\alpha, \beta, \gamma) \rightarrow SO(3)$.
-%Thus there can be two transformations that are arbitrarily close,
-%but have a large difference in one of their Euler angles.
-%This discontinuity places an extra burden on learning methods, which have to recover the circular
-%nature of the Euler angle representation. However, if differences between angles are required
-%(as e.g.\ for kernel density methods -- see Subsection~\ref{sec:Implementation.kde})
-%then the problem can be finessed by computing a circular difference.
-%
-%%\subsubsection{Quaternions} Unit quaternions provide a global parameterisation of $SO(3)$, but at the cost of using four parameters instead of three as in the case of Euler angles. The unit quaternion $q$ is a normalised 4-dimensional vector associated with a rotation about unit-length axis $\omega \in \mathbb{R}^3$ by angle $\theta$:
-%%
-%%\begin{equation}
-%%q = (\cos(\theta/2), \omega \sin(\theta/2))
-%%\label{eq:Parameterisation.Quaternions.angleaxis}
-%%\end{equation}
-%
-%If using quaternions, 
-%the parameterisation of a rigid-body transformation becomes
-%$ \bx = [\, \mathbf{p}\, ;\, \mathbf{q}\,] \in \mathbb{R}^7$,
-%where  $\mathbf{q}$ is a unit quaternion.
-%The set of all unit quaternions comprise a 3-dimensional sphere $S^3 \in \mathbb{R}^4$ and
-%form a double cover of $SO(3)$, since a rotation about
-%axis $\omega$ by angle $\theta$ is equivalent to a rotation about
-%axis $-\omega$ by angle $-\theta$.
-%Consequently any rotation $R \in SO(3)$ corresponds to exactly
-%two quaternions $q$ and $-q$.
-%Therefore any distance metric defined for quaternions $q$ and $q'$ must
-%also test the case with $q$ and $-q'$.
 The implementations are indexed by the algorithms used, and the information employed. For the function approximation formulation we used LWPR (Linear Weighted Projection Regression). For the unfactored density estimation formulation we used a variant of KDE (Kernel Density Estimation), and for the factored density estimation formulation we also used KDE, but denote it KDEF where -F denotes the use of factorisation. In addition, each algorithm: LWPR, KDE, KDEF, was implemented with differing amounts of input information. We denote these G (Global), GA (Global and Agent) and GAE (Global and Agent and Environment), as described previously. All the implementations depend on the parameterisation of rigid-body transformations chosen. In this paper we tested two parameterisations of orientation: Euler angles and quaternions (see e.g. \cite{murray_mathematical_1994}). We also employed two different densities for the quaternion parameterisation: Gaussian and von-Mises Fisher.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Regression method}\label{sec:Implementation.regression}
 
-We used Locally Weighted Projection Regression (LWPR) \cite{vijayakumar_incremental_2005}, a powerful method applied widely in robotics, to estimate the mapping described by Equation~\eqref{eq:Learning.short}. The regression scheme was implemented using the LWPR software library \cite{klanke_library_2008}. LWPR was chosen because it employs an incremental learning algorithm that can handle a large number of input dimensions. After initial experimentation LWPR was run using the Euler angle parameterisation. 
-%Several versions of the regression method were implemented, with varying amounts of information, corresponding to the global (referred to as LWPR-G), global and agent (LWPR-GA)
-%%and global, agent and environment (LWPR-GAE) information.
-%The Euler angle parameterisation was used for all the LWPR versions.
-%In the case of LWPR-G, there were three rigid-body transformations provided as inputs to LWPR, which formed an 18-dimensional input space. The output was encoded as a 6-dimensional vector, that described the motion of the object $T^{B_{t}, B_{t+1}}$.
-%For the case of the global plus agent information
-%For LWPR-GA, the input space was augmented by 6 dimensions to accommodate the transformation $T^{A^{l}_t, B^{l}_t}$.
-%The contextual information provided by the agent contact
-%can be characterised as discrete,
-%since the agent contact only acts when the finger and object are touching,
-%i.e.\ for a discrete set of values in the input space.
-%This is challenging for LWPR,
-%which is better suited to operating with continuous contexts.
-%For LWPR-GA and LWPR-GAE, the extension of the output space (to 12 dimensions) with $T^{B^{l}_{t}, B^{l}_{t+1}}$ did not change the prediction of $T^{B_{t}, B_{t+1}}$, since LWPR treats each output dimension independently as stated in \cite{klanke_library_2008}.
-%Thus, it was not possible to take advantage of the extra information provided by $T^{B^{l}_{t}, B^{l}_{t+1}}$ in the same manner
-%as the density estimation approach (Equation~\eqref{eq:Learning.densitylocal}).
-%
-%Finally, when using (possibly several) environment contacts, the input space was again enlarged, to form domains of up to 42 dimensions.
-%In this formulation of regression, the inputs from the global, agent and environment frames were treated uniformly, whereas the density estimation scheme of Equation~\eqref{eq:Learning.MultiFactorProduct}
-%made a clear distinction between these three types of input.
-%Furthermore, as there is no special structure, such as a factored density, in our regression framework, we may expect
-%poor performance when extrapolating to novel actions and object shapes. 
-The dimensions of the input and output spaces of each LWPR predictor are summarised in Table~\ref{tab:InpOutSpaceLWPR}.
+We used Locally Weighted Projection Regression (LWPR) \cite{vijayakumar_incremental_2005}, a powerful method applied widely in robotics, to estimate the mapping described by Equation~\eqref{eq:Learning.short}. The regression scheme was implemented using the LWPR software library \cite{klanke_library_2008}. LWPR was chosen because it employs an incremental learning algorithm that can handle a large number of input dimensions. After initial experimentation LWPR was run using the Euler angle parameterisation. The dimensions of the input and output spaces of each LWPR predictor are summarised in Table~\ref{tab:InpOutSpaceLWPR}.
 
 \begin{table}[b]
 \begin{center}
@@ -110,119 +31,51 @@ of LWPR predictors, where $N$ is the number of
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Kernel density method}\label{sec:Implementation.kde}
 
-A variant of Kernel Density Estimation (KDE) \cite{scott2004multi-dimensional} is used to approximate the conditional densities employed in the product in Equation~\eqref{eq:Learning.MultiFactorProduct}.
-%KDE is an example of a non-parametric method,
-%where an underlying distribution is modelled by a mixture
-%of $N$ identical kernels centred on \textit{training samples}.
-%We shall use ``KDEF" to denote the KDE algorithm applied to the factored density \eqref{eq:Learning.MultiFactorProduct}, and use ``KDE" to label the unfactored case~\eqref{eq:Learning.density}.
-%There are three variants of KDEF: KDEF-G, KDEF-GA and KDEF-GAE,
-%where the suffix denotes whether information from agent~(A)
-%and environment~(E) contacts is utilised, in addition to global (G) information.
+A variant of Kernel Density Estimation (KDE) \cite{scott2004multi-dimensional} is used to approximate the conditional densities employed in the product in Equation~\eqref{eq:Learning.MultiFactorProduct}. This requires that we encode the rigid body transformations as parameter vectors. To that end, and for the sake of compactness, we introduce some additional notation. First we use $T^z$ to denote an ordered set of rigid body transformations. $T^x_f$ is used to denote the set of conditioning transformations for factor $f \in \{G, A, (E,1) \ldots (E,N)\}$, and $T^y_f$ denotes the corresponding conditioned transformation. $\bx_f$ and $\by_f$ are then simply the corresponding parameter vectors for a given parameterisation. Given this the global factor, for example, can be  referred to in three equivalent ways:
 
-%Training samples are composed of $D = D^x + D^y$ rigid body transformations,
-%where $D$, $D^x$ and $D^y$ are the numbers of transformations
-%comprising the joint, conditioning and conditioned densities respectively.
-%For example, $D^y$ equals one for all conditional distributions
-%in product \eqref{eq:Learning.MultiFactorProduct},
-%however $D^x$ equals three for global joint distribution
-%\eqref{eq:Learning.densityglobal}, two for local joint distribution
-%\eqref{eq:Learning.densitylocal} and one for local contact joint
-%distributions \eqref{eq:Learning.densityenv}.
-%
-%The stacked parameters of conditional distributions
-%are denoted by (italic) $T^x$ and $T^y$:
-%\begin{subequations}
-%\label{eq:Density.Estimation.transformations}
-%\begin{align}
-%T^x &= \left\{T_1, \ldots, T_{D^x}\right\} \\
-%T^y &= \left\{T_1, \ldots, T_{D^y}\right\}
-%\end{align}
-%\end{subequations}
-%Transformations $T^x$ and $T^y$ are then mapped onto parameter vectors
-%using one of the parameterisations introduced in
-%Subsection~\ref{sec:Implementation.Parameterisation}:
-%\begin{subequations}
-%\label{eq:Density.Estimation.sample}
-%\begin{align}
-%x(T^x) &= \left[\begin{array}{ccc}x_1(T^x_1) & \ldots & x_{D^x}(T^x_{D^x}) \end{array}\right]^\mathrm{T} \\
-%y(T^y) &= \left[\begin{array}{ccc}y_1(T^y_1) & \ldots & y_{D^y}(T^y_{D^y}) \end{array}\right]^\mathrm{T}
-%\end{align}
-%\end{subequations}
-%\noindent where (non-italic) $\mathrm{T}$ denotes the
-%vector transpose operation and where each $i$-th
-%rigid body transformation $T^x_i$ and $T^y_i$ is parameterised
-%by vectors $x_i$ and $y_i$ respectively:
-%\begin{subequations}
-%\label{eq:Density.Estimation.sampleblock}
-%\begin{align}
-%x_i(T^x_i) &= \left[\begin{array}{cc}x^l_i & x^o_i\end{array}\right]^\mathrm{T} \\
-%y_i(T^y_i) &= \left[\begin{array}{cc}y^l_i & y^o_i\end{array}\right]^\mathrm{T}
-%\end{align}
-%\end{subequations}
-%\noindent with location vectors $x^l_i, y^l_i \in \mathbb{R}^3$ and
-%orientation vectors $x^o_i, y^o_i \in \mathbb{R}^3$ for Euler angles
-%or $x^o_i, y^o_i \in \mathbb{R}^4$ for quaternions.
+\begin{eqnarray*}
+p_G(T^{B_{t}, B_{t+1}}|T^{A_{t}, A_{t+1}}, T^{A_t, B_t}, T^{B_t, O}) & \equiv p_G(T^y_G|T^x_G)  \\
+& \equiv p_G(\by_G|\bx_G)
+\end{eqnarray*}
 
-%A product of $N$ factors \eqref{eq:Learning.MultiFactorProduct}
-%for transformations $T^y$ given $T^x$ can be written as:
-%\begin{equation}
-%p(T^y|T^x) = C \mathop{\prod}_{i=1 \ldots N} p_i(y(G_i^{-1} T^y G_i)|x(G_i^{-1} T^y G_i))
-%\label{eq:Density.Estimation.product}
-%\end{equation}
-%\noindent where $C$ is a normalisation constant,
-%$p_i$ are single factor conditional densities,
-%and $G_i^{-1} T^x G_i$ and $G_i^{-1} T^y G_i$ are ``block''
-%similarity transformations such that
-%$(T_{body}^x)_j = G_i^{-1} (T_{in}^x)_j G_i$ and
-%$(T_{body}^y)_j = G_i^{-1} (T_{in}^y)_j G_i$ where
-%$G_i$ is an instantaneous frame of the $i$-th factor
-%(also see \eqref{eq:Learning.Body1}).
+Finally we define the parameter vectors for the unfactored density estimation problem Eq.\eqref{eq:Learning.density} as the concatenation of the vectors for each factor, so $\bx= \langle \bx_G, \bx_A, \{\bx_{E,k}\}_{k = 1 \ldots N} \rangle$ and $\by = \langle \by_G, \by_A, \{\by_{E,k}\}_{k = 1 \ldots N} \rangle$.
 
-The conditional probability density (CPD) $p_{qs}$ in Equation~\eqref{eq:Learning.density} and each CPD or factor in
-Equations~\eqref{eq:Learning.densityglobal} to~\eqref{eq:Learning.densityenv}
-can be represented (up to a normalisation constant) as a mixture of products of simple kernels:
+So as to capture the conditional probability densities (CPD) over $\by_f$ for all the different values of $\bx_f$ we simply perform kernel density estimation for their joint density, and then  index by the specific $\bx^t$ at prediction time to give $p_f(\by_f^t|\bx_f^t)$. For factor $f$ the joint density kernel estimate is:
 \begin{equation}
-P(\mathbf{Y}|\mathbf{X}) \propto
-\mathop{\sum}_{j=1 \ldots M}
-K(\mathbf{X}, \hat{\mathbf{X}}_j, H \mathbf{h}^{(X)})
-K(\mathbf{Y}, \hat{\mathbf{Y}}_j, H \mathbf{h}^{(Y)})
+p_f(\by_f,\bx_f) = \mathop{\sum}_{j=1 \ldots M}
+K_{\mathbf{H}^{\bx_f}}(\bx_f - \hat{\bx}_f^j)
+K_{\mathbf{H}^{\by_f}}(\by_f - \hat{\by}_f^j)
 \label{eq:Density.Estimation.mixture}
 \end{equation}
-\noindent where the vector $\mathbf{X}$ corresponds to the parameters of the transformations associated with the conditioning variables of the CPD, and the components of vector $\mathbf{Y}$ parameterise the transformation representing the predicted object motion. During learning, for each of the $M$ training samples,
-a pair of vectors $\hat{\mathbf{X}}_j$ and $\hat{\mathbf{Y}}_j$
-is constructed from the parameter values of the associated transformations. These vectors then remain fixed during prediction.
-Vectors $\mathbf{h}^{(X)}$ and $\mathbf{h}^{(Y)}$, known as \textit{bandwidths}, are then estimated from training samples using
-the ``multivariate rule-of-thumb'' \cite{scott2004multi-dimensional}.
-These bandwidth parameters $\mathbf{h}^{(X)}$ and $\mathbf{h}^{(Y)}$ are additionally multiplied by a meta-parameter $H \in \mathbb{R}$ which can be estimated by a model selection process (see Subsection~\ref{sec:Experiment.Setup}). Note that $H$, $\mathbf{h}^{(X)}$, $\mathbf{h}^{(Y)}$, $\hat{\mathbf{X}}_j$
-and $\hat{\mathbf{Y}}_j$ will depend on the particular CPD to be estimated. (If needed, this dependency will be made explicit in the sequel, by using an extra index $k$.)
-
-Each kernel function $K()$ in Equation~\eqref{eq:Density.Estimation.mixture} can be written in the form:
+\noindent where the bandwidth matrix  $\mathbf{H}^{\mathbf{Z}_f} $ is diagonal, so that $\mathbf{H}^{\mathbf{Z}_f}_{ii}  = \theta \mathbf{h}^{\mathbf{Z}_f}_i$ where vectors $\mathbf{h}^{\bx_f}$ and $\mathbf{h}^{\by_f}$  are estimated from training samples using Silverman's ``multivariate rule-of-thumb'' \cite{scott2004multi-dimensional}. The additional scaling parameter $\theta \in \mathbb{R}$ is estimated by model selection (see Subsection~\ref{sec:Experiment.Setup}). Note that $\mathbf{H}^{\bx_f}$ and $\mathbf{H}^{\by_f}$ depend on the factor $f$ being estimated. Given that they are diagonal, and supressing $f$ for compactness, each kernel function $K()$ in Equation~\eqref{eq:Density.Estimation.mixture} can thus be written:
 \begin{equation}
-K(\mathbf{X}, \hat{\mathbf{X}}, \mathbf{h}) =
-\mathop{\prod}_{l=1 \ldots L} \exp \left[-\frac{1}{2}d(\bx_l, \hat{\bx}_l, \mathbf{h}_l)\right]
+K_{\mathbf{H}^\bx}(\bx - \hat{\bx}) = \exp \left[-\frac{1}{2}d(\bx, \hat{\bx}, \mathbf{h^{x}}) \right]
 \label{eq:Density.Estimation.kernel}
 \end{equation}
-\noindent where the $\bx_l$ are the parameters of the $L$ transformations that are the conditioning variables in the CPD. A similar form exists for $\mathbf{Y}$, with $L=1$. Furthermore $d()$ is a \textit{distance function} that determines the kernel type. We employed Gaussian kernels for both Euler and quaternion representations, and additionally Gaussian+Von Mises Fisher kernels for the case of quaternions.
-\begin{enumerate}
-\item For a \textit{Gaussian kernel}:
+
+%\begin{equation}
+%K(\bx, \hat{\bx}, \mathbf{h}) =
+%\mathop{\prod}_{l=1 \ldots L} \exp \left[-\frac{1}{2}d(\bx_l, \hat{\bx}_l, \mathbf{h}_l)\right]
+%\label{eq:Density.Estimation.kernel}
+%\end{equation}
+%\noindent where the $\bx_l$ are the parameters of the $L$ transformations that are the conditioning variables in the CPD. A similar form exists for $\by$, with $L=1$. 
+\noindent where $d()$ is a \textit{distance function} that determines the kernel type. We employed Gaussian kernels for both Euler and quaternion representations, and additionally Gaussian+Von Mises Fisher kernels for the case of quaternions. For a \textit{Gaussian kernel}:
 \begin{equation}
-d_\mathrm{Gauss}(\bx, \hat{\bx}, \mathbf{h}) =
-(\bx - \hat{\bx})^\mathrm{T}\mathbf{C}^{-1}(\bx - \hat{\bx})
+d_\mathrm{\mathcal{N}}(\bx, \hat{\bx}, \mathbf{h}) =
+(\bx - \hat{\bx})^\mathrm{T}\mathbf{H}^{-1}(\bx - \hat{\bx})
 %\mathop{\sum}_{i=1 \ldots \mathrm{DIM}(x)} \left(\frac{x_i - \hat{x}_i}{h_i}\right)^2
 \label{eq:Density.Estimation.gaussiandist}
 \end{equation}
-\noindent corresponding to a Mahalanobis distance with diagonal covariance
-$\mathbf{C}_{ii} = [\mathbf{h}]_i$.
-Here $\bx, \hat{\bx}, \mathbf{h}$ are in $\mathbb{R}^6$ for Euler angles or $\mathbb{R}^7$ for the quaternion parameterisation.
+%\noindent 
+%Here $\bx, \hat{\bx}, \mathbf{h}$ are in $\mathbb{R}^6$ for Euler angles or $\mathbb{R}^7$ for the quaternion parameterisation.
 %\begin{equation}
 %d_\mathrm{Mahalanobis}(\bx, \hat{\bx}, \mathbf{C}) = (x - \hat{x})^\mathrm{T}\mathbf{C}^{-1}(x - \hat{x})
 %\label{eq:Density.Estimation.Mahalanobis}
 %\end{equation}
-\item For a product of a Gaussian kernel and \textit{von~Mises--Fisher} kernel:
+For a product of a Gaussian kernel and \textit{von~Mises--Fisher} kernel:
 \begin{multline}
-d_\mathrm{GaussVMF}(\bx, \hat{\bx}, \mathbf{h}) =
-d_\mathrm{Gauss}(\mathbf{p}, \hat{\mathbf{p}}, \mathbf{h}^{(p)}) \; +\\
-d_\mathrm{VMF}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)})
+d_\mathrm{\mathcal{N}V}(\bx, \hat{\bx}, \mathbf{h}) =
+d_\mathrm{\mathcal{N}}(\mathbf{p}, \hat{\mathbf{p}}, \mathbf{h}^{(p)}) \; + d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)})
 \label{eq:Density.Estimation.gaussvmfdist}
 \end{multline}
 \noindent where %$\mathbf{p} \in \mathbb{R}^3$,
@@ -232,27 +85,40 @@ $h^{(q)} \in \mathbb{R}$,
 %$h = \left[\begin{array}{cc}h^l & h^o\end{array}\right]^\mathrm{T}$, $h^o \in \mathbb{R}$,
 and (see e.g.\ \cite{abramowitz_handbook_1965}):
 \begin{equation}
-d_\mathrm{VMF}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)}) =
+d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)}) =
 2 h^{(q)} \left(1 - \left| \mathbf{q} . \hat{\mathbf{q}} \right|\right)
 \label{eq:Density.Estimation.vmfdist}
 \end{equation}
-\noindent where $\mathbf{q} . \hat{\mathbf{q}}$ is the quaternion dot product and taking the absolute value fixes the double cover problem.
-\end{enumerate}
+\noindent where $\mathbf{q} . \hat{\mathbf{q}}$ is the quaternion dot product and taking the absolute value fixes the double cover problem. This Von Mises--Fisher kernel is an approximation (up to a multiplicative constant \cite{detry_learning_2010}) of the von~Mises--Fisher distribution.
 
-The Von Mises--Fisher kernel \eqref{eq:Density.Estimation.kernel} with \eqref{eq:Density.Estimation.vmfdist} is an approximation (up to a multiplicative constant \cite{detry_learning_2010}) of the von~Mises--Fisher distribution:
-\begin{equation}
-f_4(x, \mu, \kappa) = C_4(\kappa)\exp(\kappa x^\mathrm{T} \mu)
-\label{eq:Density.Estimation.vmf}
-\end{equation}
-\noindent where $C_4(\kappa)$ is a normalisation constant and where $\mu$ and $\kappa$ are unit quaternions. In directional statistics $f_4(x,\mu,\kappa)$ is a probability distribution on $S^3 \in \mathbb{R}^4$ with mean $\mu$ and dispersion parameter $\kappa$.
+%\begin{figure}
+%\caption{Learning with KDEF}
+%\label{alg:learning}
+%\begin{algorithmic}
+%\STATE {\bf learn-KDEF(\{$X^{0:T}$,$Y^{0:T}$\}_) $\rightarrow ( \mathcal{K}, \mathcal{H}$)
+%\STATE \mathcal{K} is the set of kernel centres
+%\STATE \mathcal{H} is the set of kernel bandwidths
+%\STATE $j=1$
+%\FOR{each of S trials}
+%\FOR{$t=0$ to $T-1$}
+%\FOR{each factor $f \in F = \{G,A,(E,1) \ldots (E,N)\}$}
+%\STATE $\mathcal{K}^{x,j}_{f} = K_{\mathbf{H^{X_f}}}(X^t_{f})$
+%\STATE $\mathcal{K}^{y,j}_{f} = K_{\mathbf{H^{Y_f}}}(Y^t_{f})$
+%\ENDFOR
+%\STATE $j=j+1$
+%\ENDFOR
+%\ENDFOR
+%%\STATE $\mathcal{K} = \{ ( K^{x,j}_f ,  K^{y,j}_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$
+%\end{algorithmic}
+%\end{figure}
 
-The dimensions of the input $\mathbf{X}$ and output $\mathbf{Y}$ spaces for KDEF predictors are summarised in Table~\ref{tab:InpOutSpaceKDE}.
+The learning algorithm for factored KDE is now straightforward given a set of $S$ training sequences $\{ (\bx^{1:\tau} , \by^{1:\tau})_s \}_{s = 1 \ldots S}$, each of length $\tau$. The kernel centres are simply stored in a set $\mathcal{K} = \{ ( K^{x,j}_f ,  K^{y,j}_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$, where $K^{x,j}_f$ denotes the $j^{th}$ kernel centre, and $M= \tau \times S$. A kernel bandwidth is computed for $\bx_f$ and $\by_f$ for each factor $f$, and stored in a set $\mathcal{H} = \{ (\mathbf{H}^{\bx_f},  \mathbf{H}^{\by_f} ) \}_{f \in F}$. The training procedure for KDE is identical, but with only one factor. The dimensionality of the input ($\bx$) and output ($\by$) spaces for different KDE and KDEF predictors is summarised in Table~\ref{tab:InpOutSpaceKDE}.
 
 \begin{table}[b]
 \begin{center}
 \begin{tabular}{|l|l|l|l|l|}
 \cline{1-5}
-Predictor & \multicolumn{3}{|c|}{input space} & output space \\
+Predictor & \multicolumn{3}{|c|}{input space per factor} & output space \\
 \cline{2-4}
  & global & agent & env & \\
 \cline{1-5}
@@ -262,72 +128,64 @@ KDEF vmf & 21 & 14 & 7 & 7 \\
 \cline{1-5}
 \end{tabular}
 \end{center}
-\caption[Input/output space KDEF]{Input and output space dimensions of KDEF factors.}\label{tab:InpOutSpaceKDE}
+\caption[Input/output space KDEF]{Input and output space dimensions of KDEF factors. There are $N$ environment factors.}\label{tab:InpOutSpaceKDE}
 \end{table}
 
-Following Equation~\eqref{eq:Learning.MultiFactorProduct},
-the prediction problem at each step can be defined as finding that
-transformation $\widetilde{T}^y$ which maximises the product of conditional densities
-\eqref{eq:Learning.product} given fixed $T^x$, i.e.:
+
+\subsection{Prediction}
+Single step prediction for LWPR is straightforward, but single step prediction for KDE involves optimisation of the likelihood of the prediction, and for KDEF this is non-trivial. We describe that here. Following Equation~\eqref{eq:Learning.MultiFactorProduct},
+the single step prediction problem can be defined as finding the
+transformation $T^{y^*}$, parameterised by $\by^*$, which maximises the product of conditional densities
+\eqref{eq:Learning.product} given query $\bx$, i.e.:
 \begin{equation}
-\widetilde{T}^y = \argmax{T^y} p(T^y|T^x)
+ \by^*= \argmax{\by} p_{qs}(\by|\bx)
 \label{eq:Density.Estimation.max}
 \end{equation}
-Prior to the maximisation procedure, for each factor $k$
-and each training sample $j$ values of 
-$K(\mathbf{X}, \hat{\mathbf{X}}_j, H \mathbf{h}^{(X)})$
-in \eqref{eq:Density.Estimation.mixture} are computed and assigned
-to $w_{k,j}$, referred to as \textit{weights}.
-The normalised weight $w_{k,j}$ can be interpreted as a probability of
-generating $\mathbf{X}$ from a multivariate Gaussian centred at $\hat{\mathbf{X}}_{j,k}$
-with covariance $\mathbf{C}_{ii} = [H_k \mathbf{h}^{(X)}_k]_i$.
-In order to increase the computational efficiency of the optimisation procedure
-we only consider the $M^{max}_k < M_k$ most relevant training samples,
-(i.e. those with the highest weights $w_{k,j}$ at the query point $\mathbf{X}$).
-These are identified by calculating, for each training sample, the value
-of the distance function $d()$ (from Equation~\eqref{eq:Density.Estimation.kernel}).
-The training samples are then sorted according to the distance using a
-partial sort algorithm (e.g. \cite{knuth_searching_1998})
-to identify the $M^{max}_k$ most relevant training samples.
+The one-step prediction algorithm is given in Fig~\ref{alg:prediction}. First for the input vector $\bx$, the conditional density over $\by$ must be obtained for each factor $f$. This is achieved by evaluation of each kernel  $K_{\mathbf{H^{\bx_f}}}(\bx_f - \hat{\bx}_f^j)$ from $j=1:M$ in Eq~\eqref{eq:Density.Estimation.mixture} to give a weight $w_{f,j}$. The vector of normalised weights $\vec{w_f}$ forms a distribution over the kernels in $\by_f$. $\vec{w_f}$ is computed for every factor $f$. For efficiency we only consider the $r$ kernels with the highest weights $w_{f,j}$ at the query point $\bx_f$. 
 
-Equation~\eqref{eq:Density.Estimation.max} is computed using the
-differential evolution (DE) optimisation algorithm \cite{storn_differential_1997}.
-Note that one cannot use the mean-shift algorithm \cite{cheng_mean_1995}
-mostly due to the product involved in \eqref{eq:Density.Estimation.max}.
-DE is particularly simple to tune, since it is controlled by only
-two meta-parameters: a \textit{crossover probability}
-and a \textit{population size} of candidate solutions.
-If the number of generations is fixed,
-the total run time scales linearly with the number of factors,
-their dimensionality and the number samples.
-Optionally, the entire maximisation procedure is stopped when
-no further significant improvement is observed.
-The optimisation algorithm requires an ability to sample from the
-product~\eqref{eq:Learning.product}.
-This can be achieved by performing the following two step procedure:
+A initial population of solutions is then generated by sampling. First a factor $f$ is sampled randomly. Then a kernel $j$ is sampled by drawing $j$ according to the distribution $\vec{w}_f$. Finally a candidate $\by_f$ is sampled from the $j^{th}$ kernel with centre $K^{y,j}_f$. This sampling procedure is run $\beta$ times to create the initial set of candidate solutions.
+\begin{figure}
+\label{alg:prediction}
+\begin{algorithmic}
+\STATE {\bf one-step-prediction-KDEF(x) $\rightarrow \by^*$} 
+\STATE $F = (g, a, (e,1) \ldots (e,N))$  \\
+\FOR{$f \in F$}       
+\FOR{$j = 1$ to $M$}
+\STATE $w_{f,j} = K_{\mathbf{H^{\bx_f}}}(\bx_f - \hat{\bx}_f^j)$
+\ENDFOR
+\STATE $\vec{w_f} =$ normalisation($w_{f,1} \ldots w_{f,M}$)
+\ENDFOR
+\FOR{$i=1$ to $\beta$}
+\STATE randomly sample a factor $f\in F$ 
+\STATE sample $j$ from distribution $\vec{w_f}$
+\STATE  $\mathcal{Y}_i$ sampled from density with mean $K^{y,j}_f$ and bandwidth $\mathbf{H^{\by_f}}$
+\ENDFOR
+\STATE maximise Eq.10 with $Y^*$ = stochastic-optimisation($\mathcal{Y}$,$\mathcal{K}$) 
+\end{algorithmic}
+\caption{One-step prediction for the KDEF method}
+\end{figure}
 
-\begin{enumerate}
-\item Randomly choose an factor $k$ and then sample $j$ from
-a set of samples $\{w_{k,j}\}$ using the importance sampling algorithm
-with importance weights $w_{k,j}$ (e.g. \cite{bishop_pattern_2006}).
-\item Sample from a multivariate Gaussian centred at $\hat{\mathbf{Y}}_{j,k}$ with
-covariance $\mathbf{C}_{ii} = [H_k \mathbf{h}^{(Y)}_k]_i$, using
-e.g.\ the Marsaglia polar method \cite{marsaglia_convenient_1964}.
-\end{enumerate}
+This initial solution set is then refined by stochastic optimisation with respect to $p_{qs}$. To achieve this similarity transforms must be used to evaluate the likelihood of each $\by$ according to each factor $f$. Any optimisation routine could be applied, but we used differential evolution (DE) \cite{storn_differential_1997}\footnote{Note that one cannot use the mean-shift algorithm \cite{cheng_mean_1995}
+due to the product involved in \eqref{eq:Density.Estimation.max}}.
+DE is particularly simple to tune, since it is has two meta-parameters: \textit{crossover probability} $\alpha$ and \textit{population size} $\beta$. If the number of generations is fixed, the total run time scales linearly with the number of factors, their dimensionality and the number samples. Optionally, the entire maximisation procedure is stopped when
+no further significant improvement is observed. 
 
-Importantly, after generating a new solution candidate,
-all sub-vectors $\mathbf{q}$ have to be normalised when a quaternion parameterisation is used.
+%The optimisation algorithm requires an ability to sample from the product~\eqref{eq:Learning.product}.
+%This can be achieved by performing the following two step procedure:
+%
+%\begin{enumerate}
+%\item Randomly choose an factor $k$ and then sample $j$ from
+%a set of samples $\{w_{k,j}\}$ using the importance sampling algorithm
+%with importance weights $w_{k,j}$ (e.g. \cite{bishop_pattern_2006}).
+%\item Sample from a multivariate Gaussian centred at $\hat{\by}_{j,k}$ with
+%covariance $\mathbf{C}_{ii} = [H_k \mathbf{h}^{(Y)}_k]_i$, using
+%e.g.\ the Marsaglia polar method \cite{marsaglia_convenient_1964}.
+%\end{enumerate}
+%
+%Importantly, after generating a new solution candidate,
+%all sub-vectors $\mathbf{q}$ have to be normalised when a quaternion parameterisation is used.
 
 %All KDEF factors are assumed to be independent,
 %therefore their domains do not sum up.
 
-To improve the efficiency of the implementation, no learning or prediction
-was performed in a given trial until the initial contact was made between
-robotic finger and object. This procedure was employed by
-the KDE, KDEF and LWPR predictors. This means that the learners and
-predictors are switched on by an initial finger-object contact.
-In addition, for the KDEF predictor, at each time step,
-agent and environment factors were only used
-if the corresponding agent-object or object-environment distance
-was within a certain threshold. 
-% LWPR can't do this switching off/on of contacts
+In order to solve the multi-step prediction problem, the prediction from the one step prediction algorithm $\by^t$ is fed back as the relevant part of the conditioning parameter vector $\bx^t+1$. In this way long prediction sequences can be generated for all the algoritms. For efficiency, no learning or prediction was performed in a given trial until the initial contact was made between the robot and object. In addition, for the KDEF predictor, at each time step, agent (A) and environment (E) factors were only used when the corresponding agent-object or object-environment distance was within a certain threshold.
