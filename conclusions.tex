@@ -3,7 +3,7 @@
 
 This paper has made the following contributions to learning transferable models of object behaviour:
 
-\noindent {\bf Predictors of object motion can be learned.} This is supported by experiment P1, where the behaviour of three real objects was learned by 8 of the 9 algorithm-information combinations. 
+\noindent {\bf Modular predictors of object motion can be learned.} This is supported by experiment P1, where the behaviour of three real objects was learned, in a modular fashion, by eight of the nine learning approaches in Table~\ref{tab:algs}. 
 
 \noindent {\bf Learning transfer can be achieved.} The simulated and real runs from experiments P2 and P3 both support the hypotheses H2  and H3 that learning transfer can be achieved with respect to action and shape. The analysis of simulated runs explains why some information-algorithm combinations succeed and some do not. 
 
@@ -108,29 +108,6 @@ This paper has made the following contributions to learning transferable models 
 
 \noindent {\bf Learning can match or exceed physics engine performance.} In experiment P1, in 23 of 24 cases the learners significantly outperformed a tuned physics engine. The learned predictions were usually physically plausible (see Figures~\ref{fig:ExperimentL2}). This supports hypothesis H1. In experiments P2 and P3 learning transfer using factored KDE was able to match or improve on the prediction error of a physics engine (see Figures~\ref{fig:A_av_graphs} right panel and Figure~\ref{fig:S_av_graphs} top row). Its predictions were also usually physically plausible (see Figure~\ref{fig:ExperimentA} columns 4 and 7, and Figure~\ref{fig:ExperimentStransfer} columns 1,6 and 7).
 
-\noindent {\bf Limitations and extensions:} This work is a first attempt to perform transfer learning for motion models of objects. There are two limitations to the methods presented. The most important is seen in the degradation of transfer performance in the face of observation noise. We are therefore extending our learning algorithm to take account of this noise.  The second is that at the moment learning and transfer both require selection of the attachment points of frames to each body. This process needs to be automated.
-
-
-%The results presented are roughly grouped according to the three hypotheses. In the experiments L1, L2 and L3 the ability to learn from real data on a variety of objects was examined. Hypothesis 1 was that learning can outperform physics engine based prediction and is supported by Figure~\ref{fig:Setup}. In addition Tables~\ref{tab:PerformanceTableL1av}-\ref{tab:PerformanceTableL3fi} and Figures~\ref{fig:L1graphs}-\ref{fig:L3graphs} show that the quaternion encoding for the KDE approach produces a lower error in the predicted trajectories than either Euler angles or the encoding based on the von Mises-Fisher distribution; and that LWPR worsens in performance as it has more input dimensions. This is important because it shows that the regression approach, while it can learn good predictions, is not able to take advantage of additional information in the way that the product of densities approach does.
-%Note that LWPR does not make use of the factorisation employed in the KDE case,
-%but that instead it is given the input information that the 2 and 3 factor KDE
-%learners have in order to make sure that all fair comparisons are made.
-%All these experiments involved interpolative generalisation
-%with respect to actions, as the actions in the test set are generated randomly from a continuous space,
-%and thus differ from those in the training set while being drawn from the same distribution.
-
-%Experiment A tested Hypothesis 2 -- that learning can generalise extrapolatively to novel actions.
-%Tables~\ref{tab:PerformanceTableAav} and \ref{tab:PerformanceTableAfi} show that
-%this is the case for 2 and 3 factor versions of the KDE approach,
-%but not for a single global factor for either KDE or for any of the treatments using LWPR.
-%This shows that the hypothesis is correct,
-%and supports our intuition as to why having a product of factors will help
-%(Figure~\ref{fig:ToyExample}). This is shown particularly clearly by
-%Figures~\ref{fig:ExperimentAsim} and \ref{fig:ExperimentAreal}.
-
-%Experiments S1, S2 and S3 tested Hypothesis 3 -- that learning can generalise interpolatively and extrapolatively to novel shapes. Tables~\ref{tab:PerformanceTableS1av} to \ref{tab:PerformanceTableS3fi} show that errors are larger for extrapolative generalisation than interpolative generalisation. The Tables suggest, for both simulated and real data, that KDE outperforms LWPR (although note the one exception to this in Table~\ref{tab:PerformanceTableS1fi}). Illustrative cases are shown in Figures~\ref{fig:ExperimentS1} to \ref{fig:ExperimentS3}.
-
-%Finally it is important that the predictions are what a viewer would judge as qualitatively good, ie. that the direction of travel, and the qualitative motions of the objects are correct. This is supported for Experiments L1-3 by Figures~\ref{fig:ExperimentL1} to \ref{fig:ExperimentL3}, where it can be seen that the paths followed by the predictions and the objects match, even when the precise timing of the trajectories sometimes differs. %check that Fig exptL3 really shows rolling. 
-%In Figures~\ref{fig:ExperimentAsim} to \ref{fig:ExperimentS2real} it can be seen that predictions on simulated data are more accurate that those on real data, but that although divergence occurs between the predictions and the real data the predictions produced still show the correct direction of travel, and are physically plausible except for a degree of object-finger interpenetration in Figure~\ref{fig:ExperimentS2real}. It is worth noting that only the KDE learners produced plausible predictions for shape generalisation and action generalisation. In every case for experiments A and S1, the regression prediction was that the object failed to move, with the finger passing straight through the object.
+\noindent {\bf Limitations and extensions:} This work is a first attempt to perform transfer learning for motion models of objects. There are two limitations to the methods presented. The most important is seen in the degradation of transfer performance in the face of observation noise. Recently we have extended a non-factored form of our learning algorithm to remove noise at prediction time using kinematic optimisation \cite{belter2014iros}, this is a promising route to improving transfer performance given noisy training data. The second desirable extension is that at the moment learning and transfer both require selection of the attachment points of frames to each body. This process needs to be automated.
 
 This paper establishes that predictions of object behaviour can be learned using a variety of techniques; that they can outperform physics engine predictions; that they can generalise interpolatively to similar actions and shapes; that they can be transfered to novel actions and shapes, and that they produce physically plausible predictions. Transfer learning of such models, while challenging, is possible with the right representation.  In particular a factored problem formulation encodes transferable predictions that are physically plausible and qualitatively correct.
