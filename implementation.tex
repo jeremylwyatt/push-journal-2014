@@ -42,12 +42,12 @@ Finally we define the parameter vectors for the unfactored density estimation pr
 
 So as to capture the conditional probability densities (CPD) over $\by_f$ for all the different values of $\bx_f$ we simply perform kernel density estimation for their joint density, and then  index by the specific $\bx^t$ at prediction time to give $p_f(\by_f^t|\bx_f^t)$. For factor $f$ the joint density kernel estimate is:
 \begin{equation}
-p_f(\by_f,\bx_f) = \mathop{\sum}_{j=1 \ldots M}
+p_f(\by_f,\bx_f) \propto \mathop{\sum}_{j=1 \ldots M}
 K_{\mathbf{H}^{\bx_f}}(\bx_f - \hat{\bx}_f^j)
 K_{\mathbf{H}^{\by_f}}(\by_f - \hat{\by}_f^j)
 \label{eq:Density.Estimation.mixture}
 \end{equation}
-\noindent where the bandwidth matrices  $\mathbf{H}^{\bx_f} $ and $\mathbf{H}^{\by_f} $ are diagonal, so that $\mathbf{H}^{\bx_f}_{ii}  = \theta \mathbf{h}^{\bx_f}_i$. Vectors $\mathbf{h}^{\bx_f}$ and $\mathbf{h}^{\by_f}$  are estimated from training samples using Silverman's ``multivariate rule-of-thumb'' \cite{scott2004multi-dimensional}. The additional scaling parameter $\theta \in \mathbb{R}$ is estimated by model selection (see Subsection~\ref{sec:Experiment.Setup}). Note that $\mathbf{H}^{\bx_f}$ and $\mathbf{H}^{\by_f}$ depend on the factor $f$ being estimated. Given that they are diagonal, and supressing $f$ for compactness, each kernel function $K()$ in Equation~\eqref{eq:Density.Estimation.mixture} can thus be written:
+\noindent where the bandwidth matrices  $\mathbf{H}^{\bx_f} $ and $\mathbf{H}^{\by_f} $ are diagonal, so that $\mathbf{H}^{\bx_f}_{ii}  = \theta \mathbf{h}^{\bx_f}_i$. Vectors $\mathbf{h}^{\bx_f}$ and $\mathbf{h}^{\by_f}$  are estimated from training samples using Silverman's ``multivariate rule-of-thumb'' \cite{scott2004multi-dimensional}. The additional scaling parameter $\theta \in \mathbb{R}$ is estimated by model selection (see Subsection~\ref{sec:Experiment.Setup}). Note that $\mathbf{H}^{\bx_f}$ and $\mathbf{H}^{\by_f}$ depend on the factor $f$ being estimated. Given that they are diagonal, and suppressing $f$ and $\theta$ for compactness, each kernel function $K()$ in Equation~\eqref{eq:Density.Estimation.mixture} can thus be written:
 \begin{equation}
 K_{\mathbf{H}^\bx}(\bx - \hat{\bx}) = \exp \left[-\frac{1}{2}d(\bx, \hat{\bx}, \mathbf{h^{x}}) \right]
 \label{eq:Density.Estimation.kernel}
@@ -86,10 +86,10 @@ $h^{(q)} \in \mathbb{R}$,
 and (see e.g.\ \cite{abramowitz_handbook_1965}):
 \begin{equation}
 d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)}) =
-2 h^{(q)} \left(1 - \left| \mathbf{q} . \hat{\mathbf{q}} \right|\right)
+2 h^{(q)} \left(1 - \left| \mathbf{q} \cdot \hat{\mathbf{q}} \right|\right)
 \label{eq:Density.Estimation.vmfdist}
 \end{equation}
-\noindent where $\mathbf{q} . \hat{\mathbf{q}}$ is the quaternion dot product and taking the absolute value fixes the double cover problem. This Von Mises--Fisher kernel is an approximation (up to a multiplicative constant \cite{detry_learning_2010}) of the von~Mises--Fisher distribution.
+\noindent where $\mathbf{q} \cdot \hat{\mathbf{q}}$ is the quaternion dot product and taking the absolute value fixes the double cover problem. This Von Mises--Fisher kernel is an approximation (up to a multiplicative constant \cite{detry_learning_2010}) of the von~Mises--Fisher distribution.
 
 %\begin{figure}
 %\caption{Learning with KDEF}
@@ -134,8 +134,7 @@ KDEF vmf & 21 & 14 & 7 & 7 \\
 \cline{1-5}
 \end{tabular}
 \end{center}
-\caption[Input/output space]{Dimensions of input and output spaces
-of learning predictors. $N$ is the number of
+\caption[Input/output space]{Dimensions of conditioning and conditioned variables. $N$ is the number of
 "environment contacts". There will be $N$ environment factors.}\label{tab:InpOutSpace}
 \end{table}
 

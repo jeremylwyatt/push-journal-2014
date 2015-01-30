@@ -39,7 +39,7 @@ The state of the overall system consisting of these two interacting
 bodies with frames $A$ and $B$ and the fixed environment $O$ can
 thus be adequately described by these six transformations.
 
-In fact in our representation, we replace transformation $T^{A_t, O}$ by relative transformation $T^{A_t, B_t}$, thus also explictly capturing the spatial relationship and thus any contacts between $A$ (finger) and $B$ (object). This gives us a representation consisting of the set of six transformations marked in bold dotted lines in Figure~\ref{fig:Learning.setup1}. The prediction problem, simply put, will thus be to predict the motion of the object $B$ in the next step: $T^{B_t,B_{t+1}}$ given these five other transformations. Before defining the problem formally, however, we need to think briefly about how best to store these transformations.
+In fact in our representation, we replace transformation $T^{A_t, O}$ by relative transformation $T^{A_t, B_t}$, thus also explicitly capturing the spatial relationship and thus any contacts between $A$ (finger) and $B$ (object). This gives us a representation consisting of the set of six transformations marked in bold dotted lines in Figure~\ref{fig:Learning.setup1}. The prediction problem, simply put, will thus be to predict the motion of the object $B$ in the next step: $T^{B_t,B_{t+1}}$ given these five other transformations. Before defining the problem formally, however, we need to think briefly about how best to store these transformations.
 
 Specifically, since we are interested in learning, we need to express this set of transformations in a way that supports generalised predictions. In general the behaviours of interacting bodies described by frames from Figure~\ref{fig:Learning.setup1} are independent of any inertial frame \cite{kopicki_prediction_2010}. Unfortunately, a na\"{\i}ve representation of transformation $T^{A_{t}, A_{t+1}}$ as $A_{t+1}(A_{t})^{-1}$, or explicitly given inertial frame $I$,
 % MAREK CHECK
@@ -51,7 +51,7 @@ T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t+1}} (T^{I, A_{t}})^{-1}
 \noindent makes the transformation in \eqref{eq:Learning.In1} dependent on the currently used inertial frame $I$ (see
 Figure~\ref{fig:Learning.setup1}).  This would make the stored transformations poor from the point of view of generalisation. A better way is instead to store all the transformations in a body frame (at learning time) and convert to and from an inertial frame dependent transformation (at prediction time) using similarity transforms.
 
-Intuitively these similiarity transforms align the inertial and body frames, perform the
+Intuitively these similarity transforms align the inertial and body frames, perform the
 required transformation and then invert the transformation required to
 align them. In this manner, given the instantaneous object frame
 $A_{t}$ at time $t$, and the inertial frame dependent transformation
@@ -149,10 +149,9 @@ assumption. The unfactored CPD formulation gives a density over
 possible one step motions of the object. We can
 factorise this by breaking up the conditioning variables into groups
 according to the contacts. This reflects the notion that the behaviour
-of the object is independent of contact $j$, conditional on contact
-$k$. Another way of explaining this is that each component of the
-product is an expert encoding the likely object motions given a
-particular kinematic constraint. The product will be maximised by a
+at one contact is independent of the other contacts: each component of the
+product is an expert encoding the likely object motions given a single
+kinematic constraint. The product will be maximised by a
 motion that best satisfies all the constraints simultaneously.
 
 The computational advantage is that since the component
