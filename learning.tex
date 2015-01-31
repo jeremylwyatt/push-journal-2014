@@ -1,10 +1,11 @@
 \begin{figure*}[t!]
-\centerline{\includegraphics[width=0.64\textwidth]{sequential-frames}
-\includegraphics[width=0.34\textwidth]{similarity}}
-\caption[Setup1]{{\bf (Left panel)} 2D projection at time $t$ of a robotic finger with frame at time $t$ of $A_{t}$,
+\centerline{\includegraphics[width=0.7\textwidth]{sequential-frames}
+%\includegraphics[width=0.34\textwidth]{similarity}
+}
+\caption[Setup1]{2D projection at time $t$ of a robotic finger with frame at time $t$ of $A_{t}$,
 an object with frame $B_{t}$, and a ground plane with constant frame
-$O$. Over three time steps this system consists can be described by six rigid body transformations %$T^{A_t, B_t}$, $T^{B_t, O}$, $T^{A_{t-1}, A_{t}}$, $T^{A_{t}, A_{t+1}}$, $T^{B_{t-1}, B_{t}}$, and $T^{B_{t}, B_{t+1}}$. 
-{\bf (Right panel)} Looking from above at an object on a table starting in two different positions at time $t$. In each case there is a pose change between time $t$ and $t+1$. The changes are the same relative to the instantaneous object body frames $A^{(1)}$ and $A^{(2)}$. However because transformations $T^{I, A^{(1)}}$ and $T^{I, A^{(2)}}$ are different, the corresponding transformations in the inertial frame are also different, i.e.\ $T_{in}^{A^{(1)}_{t}, A^{(1)}_{t+1}} \neq T_{in}^{A^{(2)}_{t}, A^{(2)}_{t+1}}$.}
+$O$. Over three time steps this system consists can be described by six rigid body transformations %$T^{A_t, B_t}$, $T^{B_t, O}$, $T^{A_{t-1}, A_{t}}$, $T^{A_{t}, A_{t+1}}$, $T^{B_{t-1}, B_{t}}$, and $T^{B_{t}, B_{t+1}}$.
+}
 \label{fig:Learning.setup1}
 \end{figure*}
 
@@ -47,14 +48,15 @@ Specifically, since we are interested in learning, we need to express this set o
 T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t+1}} (T^{I, A_{t}})^{-1}
 \label{eq:Learning.In1}
 \end{equation}
-
 \noindent makes the transformation in \eqref{eq:Learning.In1} dependent on the currently used inertial frame $I$ (see
-Figure~\ref{fig:Learning.setup1}).  This would make the stored transformations poor from the point of view of generalisation. A better way is instead to store all the transformations in a body frame (at learning time) and convert to and from an inertial frame dependent transformation (at prediction time) using similarity transforms.
+Figure~\ref{fig:similarity}).  This would make the stored transformations poor from the point of view of generalisation. A better way is instead to store all the transformations in a body frame (at learning time) and convert to and from an inertial frame dependent transformation (at prediction time) using similarity transforms.
 
-Intuitively these similarity transforms align the inertial and body frames, perform the
-required transformation and then invert the transformation required to
-align them. In this manner, given the instantaneous object frame
-$A_{t}$ at time $t$, and the inertial frame dependent transformation
+\begin{figure}[b!]
+\centerline{\includegraphics[width=0.9\columnwidth]{similarity-new}}
+\caption[Similarity]{ Looking from above at an object on a table starting in two different positions at time $t$. In each case there is a pose change between time $t$ and $t+1$. The changes are the same relative to the instantaneous object body frames $A$ and $A^{1}$. However because transformations $T^{I, A}$ and $T^{I, A^{1}}$ are different, the corresponding transformations in the inertial frame are also different, i.e.\ $T_{in}^{A_{t}, A_{t+1}} \neq T_{in}^{A^{1}_{t}, A^{1}_{t+1}}$.}
+\label{fig:similarity}
+\end{figure}
+Intuitively these similarity transforms align the inertial and body frames, perform the required transformation and then invert the transformation required to align them. In this manner, given the instantaneous object frame $A_{t}$ at time $t$, and the inertial frame dependent transformation
 $T_{in}^{A_{t}, A_{t+1}}$, one can obtain the body frame dependent
 transformation $T_{body}^{A_{t}, A_{t+1}}$:
 

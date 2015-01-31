@@ -3,16 +3,6 @@
 
 The input domains of $f$, $f_{qs}$ $p_{qs}$ as proposed above  adequately represent the behaviour of a specific pair of rigid bodies in a specific environment. They thus provide a well posed version of problem P1 (Action Interpolation). Given this information, however, we cannot solve problems P2 (Action Transfer) or P3 (Shape Transfer). This is because there is insufficient information: the input variables only capture {\em global} relations between objects. To properly pose transfer learning problems we must also explictly capture in the input domain all the {\em local} contact relations between the object and its surroundings. 
 
-%They but cannot be transferred to other bodies or environments. This is because the prediction problem as posed above does not encode information sufficient to determine the various contacts
-%the bodies make with one another. This is problematic because the
-%kinematic behaviour of an object can change radically as new contacts
-%occur or change position. This is because each contact provides a
-%kinematic constraint on the motion of the contacting bodies. This in
-%turn means that even small changes in the relative position or shape
-%of any of the bodies (finger, object, environment) can create large
-%changes in the future motion of the object with frame $B$. To achieve
-%transfer learning, explicit information about the contacts must therefore be captured by the input variables, and the learner must be able to capture the resultant mapping from input to output.
-
 \begin{figure}[t]
 \centerline{\includegraphics[width=7.5cm]{shapes-colour}}
 \caption[Shapes]{Two scenes (left and right),
@@ -76,11 +66,9 @@ determined by hand. In principle this procedure could be automated,
 but falls beyond the scope of the current work.
 
 We have already motivated the need for these additional input
-variables in terms of generalisation in the face of changes in object
-shape. Their utility can also be seen with respect to changes in
+variables to support shape generalisation. Their utility can also be seen with respect to changes in
 action. The top row of Figure~\ref{fig:ToyExample} shows a training
-and a test case with different actions. The prediction of the test
-push trajectory requires some encoding of the kinematic constraint
+and a test case for problem P2 (action transfer). The prediction of the test push trajectory requires some encoding of the kinematic constraint
 imposed by the contact between the base of the L-shaped flap and the
 table. This constraint exists in the training push, but is not
 significant since the flap can rotate around its corner, unconstrained
@@ -115,7 +103,7 @@ so should avoid predicting a rotation into the table.
 One point is critical here: the above analysis only concerns what the
 information allows, it depends on the ability of the learner to
 utilise it.  To test this we must incorporate the information into
-each framework. We can simply extend the regression and density
+each learning framework. We can simply extend the regression and density
 estimation frameworks to achieve this. For regression one way to
 incorporate the extra information $A^{L}_{t}$,$B^{L}_{t}$ and
 $E^{Sk}_t$\hspace{-6pt}, $B^{Sk}_t$, provided by the agent and
