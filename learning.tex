@@ -53,7 +53,7 @@ Figure~\ref{fig:similarity}).  This would make the stored transformations poor f
 
 \begin{figure}[b!]
 \centerline{\includegraphics[width=0.9\columnwidth]{similarity-new}}
-\caption[Similarity]{ Looking from above at an object on a table starting in two different positions at time $t$. In each case there is a pose change between time $t$ and $t+1$. The changes are the same relative to the instantaneous object body frames $A$ and $A^{1}$. However because transformations $T^{I, A}$ and $T^{I, A^{1}}$ are different, the corresponding transformations in the inertial frame are also different, i.e.\ $T_{in}^{A_{t}, A_{t+1}} \neq T_{in}^{A^{1}_{t}, A^{1}_{t+1}}$.}
+\caption[Similarity]{ Overhead view of an object on a table starting in two different positions. In each case the motion from $t$ to $t+1$ is the same relative to the instantaneous object body frames $A$ and $A^{1}$. However because transformations $T^{I, A}$ and $T^{I, A^{1}}$ are different, the corresponding transformations in the inertial frame are also different, i.e.\ $T_{in}^{A_{t}, A_{t+1}} \neq T_{in}^{A^{1}_{t}, A^{1}_{t+1}}$.}
 \label{fig:similarity}
 \end{figure}
 Intuitively these similarity transforms align the inertial and body frames, perform the required transformation and then invert the transformation required to align them. In this manner, given the instantaneous object frame $A_{t}$ at time $t$, and the inertial frame dependent transformation
@@ -121,9 +121,9 @@ next time step (Figure~\ref{fig:three-prediction-problems}).
 $f_{qs}$ by learning it from data. Given sufficient experience of
 object and finger trajectories we can perform a nonparametric
 regression analysis by taking $T^{A_t, B_t}, T^{B_t, O}, T^{A_{t},
-  A_{t+1}}$ etc.\ as independent variables, and $T^{B_{t}, B_{t+1}}$
-as the dependent variable.  Nevertheless, a powerful regression
-technique is required since the domain of $f_{qs}$ has 18~dimensions
+  A_{t+1}}$ as independent variables, and $T^{B_{t}, B_{t+1}}$
+as the dependent variable.  Nonetheless a powerful regression
+technique is needed since the domain of $f_{qs}$ has 18~dimensions
 or more depending on the parameterisation of motion.
 
 \noindent {\bf Learning to predict as density estimation.} As an alternative to learning the mapping~\eqref{eq:Learning.short} by regression, we can recast $f_{qs}$ as a conditional probability density (CPD) $p_{qs}$ over possible object motions $T^{B_{t},B_{t+1}}$~\cite{kopicki_prediction_2009}:
@@ -134,7 +134,7 @@ p_{qs}(T^{B_{t}, B_{t+1}} | T^{A_t, B_t}, T^{B_t, O}, T^{A_{t}, A_{t+1}})
 
 The learning problem is then posed as one of density estimation, permitting the modelling of the probabilities of many possible outcomes. 
 
-Either the regression or density estimation formulation is suitable for use in a modular learning approach. In that case a separate module is learned for every agent-object-environment combination. Each module interpolates over actions for its agent-object-environment context, and thus solves problem P1: Action Interpolation. There is not, however, enough information in the five transformations used as input, to solve either problem P2 (Action Transfer) or problem P3 (Shape Transfer). We now identify the additional information needed to solve these.
+Either the regression or density estimation formulation can be used in a modular scheme. In that case a separate module is learned for each agent-object-environment combination. Each module interpolates over actions for its context, and thus the system solves problem P1: Action Interpolation for multiple contexts. There is not, however, enough information in the five transformations used as input, to solve either problem P2 (Action Transfer) or problem P3 (Shape Transfer). We now identify the additional information needed to solve these.
 
 \input{transfer-information}
 

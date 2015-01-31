@@ -22,7 +22,7 @@ We conducted three experiments, one for each problem in Section~\ref{sec:schema}
 
 In each trial the robot finger moved in a straight line, pushing
 an object for 10 seconds, making contact at a randomly selected point
-on its surface (Figure~\ref{fig:Setup}). Video and finger position were captured at 30Hz, including a 1 second buffer at either end of the finger trajectory. Learning used the pose of the object in every other frame estimated using a particle filter tracker \cite{morwald_edge_2009}. For test trials the trajectory of the finger was known a priori and the object pose observed only at the initial frame. Using these a trajectory was predicted for the object over 150 steps (10 seconds). The predicted trajectory was created purely using the forward model and did not use any observations during the push to update its prediction. For real experiments, a 5-axis robot arm with a single finger was used. Simulation experiments used the NVIDIA PhysX engine to provide ground-truth. The PhysX engine was also separately compared to the learning methods when both were trained or tuned on real data.
+on its surface (Figure~\ref{fig:Setup}). Video and finger position were captured at 30Hz, including a 1 second buffer at either end of the finger trajectory. Learning used the pose of the object in every other frame estimated using a particle filter tracker \cite{morwald_edge_2009}. For test trials the trajectory of the finger was known a priori and the object pose observed only at the initial frame. Using these a trajectory was predicted for the object over 150 steps (10 seconds). The predicted trajectory was created purely using the forward model and did not use any observations during the push to update its prediction. For real experiments, a 5-axis robot arm with a single finger was used. Simulation experiments used the NVIDIA PhysX engine to provide ground-truth. The PhysX engine was evaluated as a predictor itself in real object trials.
 
 \begin{figure}[t]
 \centerline{
@@ -35,7 +35,7 @@ on its surface (Figure~\ref{fig:Setup}). Video and finger position were captured
 \includegraphics[width=3.4cm]{complex4}
 }
 \caption[Setup]{
-A robot finger pushes in a straight-line of length $l$=25$\pm$5 cm within a cone of angle $\alpha$=20 deg toward an object (top left). The start point is randomised so that every region on the upper part of an object is equally likely to be pushed. In the sequence above, the red wire-frame shows the output of the visual tracker, the green wire-frame the object pose predicted by the KDEF learner, and the blue wire-frame the prediction of the PhysX simulator. Although the PhysX predictions are qualitatively plausible, they are sometimes rather inaccurate.}
+A robot finger pushes in a straight-line of length $l$=25$\pm$5 cm within a cone of angle $\alpha$=20 deg toward an object (top left). The start point is randomised so that each region on the vertical face is equally likely to be pushed. The red wire-frame shows the output of the visual tracker, the green wire-frame the object pose predicted by the KDEF learner, and the blue wire-frame the prediction of the PhysX simulator, which is plausible but inaccurate.}
 \label{fig:Setup}
 \end{figure}
 
@@ -63,8 +63,7 @@ PhysX & n/a & n/a & n/a \\ \hline
 
 \subsection{Performance measure}\label{sec:Experiment.Performance}
 
-In all experiments with real objects, predicted trajectories were evaluated against the visually tracker's indicated object pose. The visual tracker does not provide perfect ground-truth, yielding
-errors of around $\pm$2mm during successful tracking. Prediction performance is evaluated as follows.
+In all experiments with real objects, predicted trajectories were evaluated against the visual tracked object pose. The tracker does not provide perfect ground-truth, yielding errors of $\pm$2mm. Prediction performance is evaluated as follows.
 
 At any particular time step, $t$, a large number, $N$, of randomly chosen points $p_{n}^{1,t}$, where $n=1 \ldots N$, are rigidly attached to an object at the ground-truth pose, and the corresponding points $p_{n}^{2,t}$ to an object at the predicted pose. At time step $t$, an average error $E_t$ can now be defined as the mean of displacements between points on the object at the predicted pose and points on the object at the ground-truth pose:
 \begin{equation}
@@ -254,12 +253,8 @@ simulator predicts incorrect turning of the cylinder when pushed
 %\centerline{
 %\includegraphics[width=0.46\columnwidth]{graphs_jw/A_real_av_graph.png}}
 \centerline{\includegraphics[width=\columnwidth]{graphs_jw/P2-graphs}}
-\caption{Experiment P2: Transfer of learning to novel actions.
-Trained on forward push on polyflap, tested on backward push,
-for simulated (top) and real data (bottom).
-Comparative performance of predictors vs. information utilised
-(global/agent/environment),
-as measured by the normalised average error ${E_{av}^{norm}}$.
+\caption{Experiment P2: Action transfer. Trained on forward push on polyflap, tested on backward push, for simulated (top) and real data (bottom). Comparative performance of predictors vs. information utilised (global/agent/environment),
+as measured by normalised average error ${E_{av}^{norm}}$.
 %Also included is a single data point for the PhysX physics engine.
 }\label{fig:A_av_graphs}
 \end{figure}
@@ -390,6 +385,7 @@ Experiment P3 tests hypothesis H3: can predictors learned from one or two object
 KDEF-GA method in experiment P3.A (Figure~\ref{fig:ExperimentStransfer} column 1).  Learners with global information only predict that the finger passed  through the box (Figure~\ref{fig:ExperimentStransfer} columns 2 and 3). In experiment P3.A, of the learners, only factoring plus all the contact information (KDEF-GAE) produced physically plausible predictions. In Figure~\ref{fig:ExperimentStransfer} (column 6) KDEF-GAE predicts that the double-cylinder slides along the table, whereas KDEF-G and KDEF-GA predict it will penetrate the table (Figure~\ref{fig:ExperimentStransfer} columns 4 and 5). KDEF-GAE also makes physically plausible predictions for a novel real object 
 (Figure~\ref{fig:ExperimentStransfer} column 7). None of the other learners could achieve this shape transfer learning. Only by using factoring plus all contact information was shape transfer learning achieved. In fact KDEF-GAE also matched the accuracy of the physics simulator. Thus this experiment supports hypothesis H3: factoring + contact information enables shape transfer learning.
 
+\subsection{General Discussion:} There are two questions that arise from the experiments collectively. First why does PhysX fail to do better P1 even though separately tuned to each object? The answer is that real objects don't adhere to idealised friction models with one coefficient for each surface: flaws in object surfaces cause deviations from the tuned model. Thus the problem holds for all such simulators and so a modular learning model will always be better. Second, why does transfer learning decline on real data in P2 and P3? The answer is tracking noise in the training data, leading to perceived penetrations of the object by the finger, giving some probability in the model that the finger can pass through the object. 
 %***ADD IMAGES TO ILLUSTRATE HOW LWPR ALWAYS REMAINS STATIONARY WHILE KDE PREDICTS MOTIONS!!!***
 
 % @@@ COMMENT ON KDE-GAX RESULTS

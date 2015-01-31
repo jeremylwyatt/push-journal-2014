@@ -6,41 +6,19 @@ The input domains of $f$, $f_{qs}$ $p_{qs}$ as proposed above  adequately repres
 \begin{figure}[t]
 \centerline{\includegraphics[width=7.5cm]{shapes-colour}}
 \caption[Shapes]{Two scenes (left and right),
-each with an object on a tabletop, and a finger.
-Only the shape of object B differs between the scenes.
-Yet when A moves to the position shown by the dashed outline at time $t+1$,
-the resulting displacement of B
-(represented by the transformation $T^{B_{t}, B_{t+1}}$)
-will be quite different.}
+each with an object on a tabletop. Only the shape of object $B$ differs between the scenes. Yet when finger A moves as shown by the dashed outline at time $t+1$, the resulting transformation of $B$ will be quite different.}
 \label{fig:Learning.shapes}
 \end{figure}
 
 To see why, consider a simple case of shape transfer in Figure~\ref{fig:Learning.shapes}. On the left is a training example. On the right is a test case, where the only difference is that the shape of the object has changed: it is wider. Given the same placement of the frames on object and agent, and the same finger motion, the predicted behaviour using Equation~\eqref{eq:Learning.short} must be the same as for the training example. But this is wrong. To enable the correct prediction to be transferred, additional information is needed in the input domain. Specifically, information on the contact between $A$ and $B$ is required. This can be captured by attaching additional frames to $A$ and $B$ close to their point of contact (see Figure~\ref{fig:Learning.setup2} (centre panel)).
 
-In general an object will have multiple contacts with both the robot, and the environment. Each of these contacts provides a kinematic constraint on the motion of the object, and thus each one of these contacts should be captured as input variables. Only in this way does the predictor have sufficient information to solve transfer problems P2 and P3. Rigid body simulators employ just such contact information. 
-
-%.  A predictor based on
-%Equation~\eqref{eq:Learning.short}, and trained on the smaller object
-%$B$ (Figure~\ref{fig:Learning.shapes} left scene), cannot generalise
-%to the larger object (right scene). This is because the three input
-%reference frames ($A_t$, $B_t$, $A_{t+1}$) in the left and right
-%panels have identical poses. Thus the predictions will be identical
-%even though the shapes are different. For the right panel the
-%prediction will be that the finger $A$ will pass into object $B$. So,
-%as posed there is insufficient information in the domain of the
-%function to allow generalisation. To enable such generalisation
-%information on the contact between $A$ and $B$ is required. If object
-%$B$ has multiple contacts then information on all of them should be
-%included. Physics simulators employ just such contact information to
-%inform their predictions. 
-
+In general an object has multiple contacts with both the robot, and the environment. Each of these contacts provides a kinematic constraint on the motion of the object, and thus each one should be captured as an input. Only in this way does the predictor have sufficient information to perform transfer learning. Rigid body simulators use just such contact information. 
 \begin{figure*}[t]
 \centerline{\includegraphics[width=0.75\textwidth]{information}}
 \caption{Three types of information useful in prediction problems. Left: (G - global) global frames of reference for the robot, object and the world. Centre: (A - agent) local frames of reference on the robot finger and the closest point on the object. Right (E - environment) local frames of reference on the object and the closest points on surfaces in the environment.}
 \label{fig:Learning.setup2}
 \end{figure*}
-
-Our approach is to use a pair of local frames to encode each contact or near contact. Each pair encodes one transformation between part of the object $B$ and another body.  To distinguish these local frame pairs from what has gone before we henceforth refer to the main frame attached to each body (as defined in Section~\ref{sec:Representations}) as the global frame for that body. 
+Our approach is to use a pair of local frames to encode each contact or near contact. Each pair encodes one transformation between part of the object $B$ and another body.  To distinguish these local frame pairs from what has gone before we henceforth refer to the main frame attached to a body (defined in Section~\ref{sec:Representations}) as that body's global frame. 
 
 We can formally define these local frame pairs as follows. Reconsider
 the 2D projection of a robot finger with global frame $A_{t}$, an
@@ -68,18 +46,11 @@ but falls beyond the scope of the current work.
 We have already motivated the need for these additional input
 variables to support shape generalisation. Their utility can also be seen with respect to changes in
 action. The top row of Figure~\ref{fig:ToyExample} shows a training
-and a test case for problem P2 (action transfer). The prediction of the test push trajectory requires some encoding of the kinematic constraint
-imposed by the contact between the base of the L-shaped flap and the
-table. This constraint exists in the training push, but is not
-significant since the flap can rotate around its corner, unconstrained
-by the base.
+and a test case for problem P2 (action transfer). The prediction of the test push trajectory requires some encoding of the kinematic constraint imposed by the contact between the base of the L-shaped flap and the table. This constraint exists in the training push, but was not significant since the flap could rotate on its corner.
 
 \begin{figure}[b]
 \centerline{\includegraphics[width=0.8\columnwidth]{BackPushToyExample}}
-\caption[ToyExample]{Schematic diagram (2D projection of 3D scene)
-in which an object (of L-shaped cross-section) on a supporting surface
-is pushed by a robotic finger. 
-Various predictors are trained solely on forward pushes (top left), but tested on backwards pushes (top right). The top panels show the push trajectory for the training and test phases, whereas the bottom panels show the outputs from three types of predictor (G, G+A and G+A+E) in the test phase.}
+\caption[ToyExample]{Information for Action Transfer: an L-shaped object is pushed by a finger. Various predictors are trained solely on forward pushes (top left), but tested on backwards pushes (top right). The top panels show a training and a test push, whereas the bottom panels show predictions given different information (G, G+A and G+A+E) for the test push.}
 \label{fig:ToyExample}
 \end{figure}
 
