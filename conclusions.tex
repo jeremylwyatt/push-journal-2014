@@ -9,7 +9,7 @@ This paper has made several findings. We have shown that modular predictors of o
 
 \noindent {\bf Modularity.} Modularity has credence in neuroscience, and is a good way to proceed for robots. Memory is cheap, and so learning many object specific modules is feasible. There is evidence that humans use modularity in developing expert motor skills. Modularity is part of the way to proceed.
 
-\noindent{\bf Multiple changing contacts.}  In dextrous manipulation, the hand makes multiple and changing contacts with the object surface. Prediction for manipulation must therefore account for these non-smooth changes. It may be that hybrid models are a way to proceed.
+\noindent{\bf Multiple changing contacts.}  In dextrous manipulation, the hand makes multiple, changing contacts with the object. Prediction for manipulation must therefore account for these non-smooth changes. Hybrid models may be a way to proceed.
 
 \noindent {\bf Training noise.} Transfer performance degrades under training noise. We have partially addressed this by removing noise at prediction time using kinematic optimisation \cite{belter2014iros}. Whether this is extensible to other learning schemes is an open question.
 
@@ -83,5 +83,6 @@ This paper has made several findings. We have shown that modular predictors of o
   the top left of each image.  }
 \label{fig:ExperimentStransfer}
 \end{figure*}
+
 
 %This paper has sought to establish a case for modular, machine learning approaches to metric prediction as a promising alternative to analytic modelling. Essentially machine learning plus modularisation allows us to predict accurately in the face of unobservable parameters. Unlike other learning approaches, ours provides precise predictions of rigid body motion over many steps, and can transfer predictions to novel actions and objects. This required exploiting the insight from analytic modelling that each contact must be modelled explicitly, and the structure of the learner should reflect the contact structure so as to to exploit this information. In summary combining insights from analytic and machine learning approaches is, we believe, the way forward.

@@ -1,5 +1,5 @@
 \begin{figure*}[t!]
-\centerline{\includegraphics[width=0.7\textwidth]{sequential-frames}
+\centerline{\includegraphics[width=0.67\textwidth]{sequential-frames}
 %\includegraphics[width=0.34\textwidth]{similarity}
 }
 \caption[Setup1]{2D projection at time $t$ of a robotic finger with frame at time $t$ of $A_{t}$,
@@ -52,7 +52,7 @@ T_{in}^{A_{t}, A_{t+1}} = T^{I, A_{t+1}} (T^{I, A_{t}})^{-1}
 Figure~\ref{fig:similarity}).  This would make the stored transformations poor from the point of view of generalisation. A better way is instead to store all the transformations in a body frame (at learning time) and convert to and from an inertial frame dependent transformation (at prediction time) using similarity transforms.
 
 \begin{figure}[b!]
-\centerline{\includegraphics[width=0.9\columnwidth]{similarity-new}}
+\centerline{\includegraphics[width=0.85\columnwidth]{similarity-new}}
 \caption[Similarity]{ Overhead view of an object on a table starting in two different positions. In each case the motion from $t$ to $t+1$ is the same relative to the instantaneous object body frames $A$ and $A^{1}$. However because transformations $T^{I, A}$ and $T^{I, A^{1}}$ are different, the corresponding transformations in the inertial frame are also different, i.e.\ $T_{in}^{A_{t}, A_{t+1}} \neq T_{in}^{A^{1}_{t}, A^{1}_{t+1}}$.}
 \label{fig:similarity}
 \end{figure}
@@ -191,7 +191,7 @@ p_{global}\  p_{agent} \mathop{\prod}_{k=1 \ldots N}{ p_{env,k} }
 
 \noindent where similarity transforms as described in Section~\ref{sec:Representations} must be used to evaluate $p_{global}$, $p_{agent}$ and the $N$ environment factors $p_{env,k}$ for a given ${T}_{in}^{B_{t}, B_{t+1}}$.
 \begin{figure}[t]
-\centerline{\includegraphics[width=0.9\columnwidth]{product-predictor}}
+\centerline{\includegraphics[width=0.85\columnwidth]{product-predictor}}
 \caption[Factored Prediction]{ A Dynamic Product of Experts. This gives the structure of a factorised predictor for a single context as depicted in the modular learner in Figure~\ref{fig:three-prediction-problems}. Each expert in the product has an applicability condition which determines whether it contributes to the product. The applicable predictors combine densities over predictions to produce an overall density. This is optimised to produce a specific prediction.}
 \label{fig:modular}
 \end{figure}
